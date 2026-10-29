@@ -1,4 +1,5 @@
 import { sql } from "./db";
+import { sincronizarReceber } from "./receber-pedido";
 
 // Cria as tabelas que ainda não existem. Roda sozinho quando o servidor liga.
 // Para mudar uma tabela existente, adicione um "ALTER TABLE ... IF NOT EXISTS" no fim.
@@ -129,6 +130,11 @@ ALTER TABLE produtos ADD COLUMN IF NOT EXISTS foto_mime text;
 -- Forma de pagamento do pedido (aparece na ordem de pedido)
 ALTER TABLE pedidos ADD COLUMN IF NOT EXISTS forma_pagamento text NOT NULL DEFAULT '';
 ALTER TABLE pedidos ADD COLUMN IF NOT EXISTS vencimento_pagamento date;
+
+-- Conta a receber criada direto pelo pedido (sem solicitação de boleto)
+ALTER TABLE contas_receber ADD COLUMN IF NOT EXISTS pedido_id integer REFERENCES pedidos(id) ON DELETE SET NULL;
+CREATE INDEX IF NOT EXISTS contas_receber_pedido ON contas_receber (pedido_id);
+ALTER TABLE contas_receber ADD COLUMN IF NOT EXISTS automatica boolean NOT NULL DEFAULT false;
 `;
 
 export async function migrar() {
@@ -148,5 +154,20 @@ export async function migrar() {
       WHERE pe.status IN ('pendente', 'em_rota')
         AND NOT EXISTS (SELECT 1 FROM estoque_movimentos m WHERE m.pedido_id = pe.id)
       GROUP BY pe.id, i.produto_id`;
+  });
+
+  // Uma vez só: pedidos passaram a gerar conta em "A receber". Entram os já lançados que não foram
+  // cancelados, ainda não têm conta e já têm forma de pagamento ou ainda vão ser entregues.
+  await sql.begin(async (tx) => {
+    const [nova] = await tx`INSERT INTO migracoes (nome) VALUES ('receber-dos-pedidos') ON CONFLICT DO NOTHING RETURNING nome`;
+    if (!nova) return;
+    const pedidos = await tx<{ id: number }[]>`
+      SELECT pe.id FROM pedidos pe
+      WHERE pe.status <> 'cancelado'
+        AND (pe.forma_pagamento <> '' OR pe.status IN ('pendente', 'em_rota'))
+        AND NOT EXISTS (
+          SELECT 1 FROM contas_receber r LEFT JOIN solicitacoes s ON s.id = r.solicitacao_id
+          WHERE r.pedido_id = pe.id OR s.pedido_id = pe.id)`;
+    for (const p of pedidos) await sincronizarReceber(tx, p.id);
   });
 }

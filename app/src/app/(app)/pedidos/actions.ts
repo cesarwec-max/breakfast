@@ -5,6 +5,7 @@ import { redirect } from "next/navigation";
 import { exigirLogin } from "@/lib/auth";
 import { sql } from "@/lib/db";
 import { lerItens } from "@/lib/itens";
+import { sincronizarReceber } from "@/lib/receber-pedido";
 
 type Tx = Parameters<Parameters<typeof sql.begin>[1]>[0];
 
@@ -72,6 +73,7 @@ export async function criarPedido(form: FormData) {
     const [{ id }] = await tx<{ id: number }[]>`INSERT INTO pedidos ${tx(dados)} RETURNING id`;
     await gravarItens(tx, id, itens);
     await ajustarEstoque(tx, id, `Pedido #${id} lançado (${await nomeCliente(tx, id)})`);
+    await sincronizarReceber(tx, id);
     return id;
   });
   atualizar();
@@ -88,6 +90,7 @@ export async function atualizarPedido(id: number, form: FormData) {
     await tx`UPDATE pedidos SET ${tx(dados)} WHERE id = ${id}`;
     await gravarItens(tx, id, itens);
     await ajustarEstoque(tx, id, `Pedido #${id} editado`);
+    await sincronizarReceber(tx, id);
   });
   atualizar();
   redirect(`/pedidos/${id}?salvo=1`);
@@ -123,6 +126,7 @@ export async function reabrirPedido(id: number) {
   await sql.begin(async (tx) => {
     await tx`UPDATE pedidos SET status = 'pendente', entregue_em = NULL WHERE id = ${id}`;
     await ajustarEstoque(tx, id, `Pedido #${id} reaberto`);
+    await sincronizarReceber(tx, id);
   });
   atualizar();
   redirect(`/pedidos/${id}`);
@@ -133,6 +137,7 @@ export async function cancelarPedido(id: number) {
   await sql.begin(async (tx) => {
     await tx`UPDATE pedidos SET status = 'cancelado', entregue_em = NULL WHERE id = ${id}`;
     await ajustarEstoque(tx, id, `Pedido #${id} cancelado (itens devolvidos)`);
+    await sincronizarReceber(tx, id);
   });
   atualizar();
   redirect(`/pedidos/${id}`);
@@ -143,8 +148,19 @@ export async function excluirPedido(id: number) {
   await sql.begin(async (tx) => {
     // Devolve os itens ao estoque; o histórico continua (sem o vínculo com o pedido apagado)
     await ajustarEstoque(tx, id, `Pedido #${id} excluído (itens devolvidos)`, true);
+    await sincronizarReceber(tx, id, true);
     await tx`DELETE FROM pedidos WHERE id = ${id}`;
   });
   atualizar();
   redirect("/pedidos");
+}
+
+/** Para pedidos antigos sem conta: cria a conta do pedido em "A receber". */
+export async function lancarNoReceber(id: number) {
+  await exigirLogin();
+  await sql.begin(async (tx) => {
+    await sincronizarReceber(tx, id);
+  });
+  atualizar();
+  redirect(`/pedidos/${id}?receber=1`);
 }

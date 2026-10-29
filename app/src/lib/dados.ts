@@ -269,7 +269,8 @@ function condicaoFiltro(filtro: FiltroConta, hoje: string) {
 
 export async function listarContasReceber(filtro: FiltroConta, hoje: string, clienteId?: number) {
   return sql<ContaReceber[]>`
-    SELECT r.*, c.nome AS cliente, s.pedido_id
+    SELECT r.id, r.cliente_id, r.solicitacao_id, r.descricao, r.valor, r.vencimento, r.pago_em, r.criado_em,
+      c.nome AS cliente, COALESCE(r.pedido_id, s.pedido_id) AS pedido_id
     FROM contas_receber r
     JOIN clientes c ON c.id = r.cliente_id
     LEFT JOIN solicitacoes s ON s.id = r.solicitacao_id
@@ -375,4 +376,13 @@ export async function listarAnexosPagar(lotes: number[]) {
 export async function obterFotoProduto(id: number) {
   const [f] = await sql<{ foto: Buffer | null; foto_mime: string | null }[]>`SELECT foto, foto_mime FROM produtos WHERE id = ${id}`;
   return f?.foto ? { foto: f.foto, mime: f.foto_mime ?? "image/jpeg" } : null;
+}
+
+/** Contas a receber de um pedido (a automática ou as dos boletos solicitados). */
+export async function contasDoPedido(pedidoId: number) {
+  return sql<{ id: number; valor: number; vencimento: string; pago_em: string | null; descricao: string }[]>`
+    SELECT r.id, r.valor, r.vencimento, r.pago_em, r.descricao
+    FROM contas_receber r LEFT JOIN solicitacoes s ON s.id = r.solicitacao_id
+    WHERE r.pedido_id = ${pedidoId} OR s.pedido_id = ${pedidoId}
+    ORDER BY r.vencimento, r.id`;
 }

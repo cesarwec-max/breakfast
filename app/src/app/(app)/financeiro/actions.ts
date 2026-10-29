@@ -7,6 +7,7 @@ import { sql } from "@/lib/db";
 import { obterCliente, type DadosBoleto, type DadosNF } from "@/lib/dados";
 import { lerItens } from "@/lib/itens";
 import { lerParcelas } from "@/lib/parcelas";
+import { sincronizarReceber } from "@/lib/receber-pedido";
 
 function lerBase(form: FormData) {
   const clienteId = Number(form.get("cliente_id"));
@@ -66,11 +67,14 @@ export async function criarSolicitacaoBoleto(form: FormData) {
         parcelas.map((p, i) => ({
           cliente_id: clienteId,
           solicitacao_id: id,
+          pedido_id: pedidoId,
           descricao: [referencia, parcelas.length > 1 ? `parcela ${i + 1}/${parcelas.length}` : ""].filter(Boolean).join(" · "),
           valor: p.valor,
           vencimento: p.vencimento,
         })),
       )}`;
+      // Os boletos substituem a conta que o pedido tinha criado sozinho
+      if (pedidoId) await sincronizarReceber(tx, pedidoId);
     }
     return id;
   });

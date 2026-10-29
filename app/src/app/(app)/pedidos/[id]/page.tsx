@@ -2,13 +2,13 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { exigirLogin } from "@/lib/auth";
-import { aEntregar, listarAnexos, obterPedido } from "@/lib/dados";
+import { aEntregar, contasDoPedido, listarAnexos, obterPedido } from "@/lib/dados";
 import { anexosTela } from "@/lib/anexos";
 import { Anexos } from "@/components/anexos";
 import { brl, dataBR, qtd } from "@/lib/formato";
 import { Confirmar, Enviar } from "@/components/botoes";
 import { Aviso, Cartao, Secao, Selo, Titulo, cls } from "@/components/ui";
-import { cancelarPedido, excluirPedido, marcarEmRota, marcarEntregue, reabrirPedido } from "../actions";
+import { cancelarPedido, excluirPedido, lancarNoReceber, marcarEmRota, marcarEntregue, reabrirPedido } from "../actions";
 import { SeloEntrega } from "../selo";
 
 export const metadata: Metadata = { title: "Pedido" };
@@ -18,14 +18,15 @@ export default async function PedidoPagina({
   searchParams,
 }: {
   params: Promise<{ id: string }>;
-  searchParams: Promise<{ novo?: string; salvo?: string }>;
+  searchParams: Promise<{ novo?: string; salvo?: string; receber?: string }>;
 }) {
   await exigirLogin();
   const id = Number((await params).id);
-  const { novo, salvo } = await searchParams;
+  const { novo, salvo, receber } = await searchParams;
   const p = Number.isInteger(id) ? await obterPedido(id) : null;
   if (!p) notFound();
   const anexos = anexosTela(await listarAnexos({ pedidoId: id }));
+  const contas = await contasDoPedido(id);
 
   return (
     <>
@@ -38,6 +39,7 @@ export default async function PedidoPagina({
       </Titulo>
       {novo && <Aviso tom="ok">Pedido salvo.</Aviso>}
       {salvo && <Aviso tom="ok">Alterações salvas.</Aviso>}
+      {receber && <Aviso tom="ok">Pedido lançado em Contas a receber.</Aviso>}
 
       <div className="grid gap-4 lg:grid-cols-[1fr_20rem]">
         <Cartao>
@@ -114,6 +116,35 @@ export default async function PedidoPagina({
               <p className="mt-1 text-xs text-muted">Os itens já saíram do estoque quando o pedido foi lançado.</p>
             </form>
           )}
+          <Cartao className="space-y-2">
+            <div className="flex items-center justify-between text-sm font-semibold">
+              A receber
+              <Link href="/receber" className={`${cls.link} text-xs font-normal`}>
+                ver contas
+              </Link>
+            </div>
+            {contas.length > 0 ? (
+              <ul className="space-y-1 text-sm">
+                {contas.map((c) => (
+                  <li key={c.id} className="flex justify-between gap-2">
+                    <span className="text-muted">Vence {dataBR(c.vencimento)}</span>
+                    <span className={`tabular font-medium ${c.pago_em ? "text-ok" : ""}`}>
+                      {brl(c.valor)} {c.pago_em ? "✓ recebido" : ""}
+                    </span>
+                  </li>
+                ))}
+              </ul>
+            ) : p.status === "cancelado" ? (
+              <p className="text-xs text-muted">Pedido cancelado: nada a receber.</p>
+            ) : (
+              <form action={lancarNoReceber.bind(null, id)}>
+                <p className="mb-2 text-xs text-muted">Este pedido ainda não está em Contas a receber.</p>
+                <Enviar className={`${cls.botao2} w-full`} pendente="Lançando…">
+                  Lançar em A receber
+                </Enviar>
+              </form>
+            )}
+          </Cartao>
           <Cartao className="space-y-2">
             <div className="text-sm font-semibold">Documentos</div>
             <Link href={`/pedidos/${id}/ordem`} className={`${cls.botao} w-full`}>

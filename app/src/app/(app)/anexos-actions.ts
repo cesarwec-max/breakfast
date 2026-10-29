@@ -42,7 +42,7 @@ export async function enviarAnexo(form: FormData): Promise<{ erro?: string }> {
     clienteId = p?.cliente_id ?? null;
   } else if (contaId) {
     const [c] = await sql<{ cliente_id: number; pedido_id: number | null }[]>`
-      SELECT r.cliente_id, s.pedido_id FROM contas_receber r
+      SELECT r.cliente_id, COALESCE(r.pedido_id, s.pedido_id) AS pedido_id FROM contas_receber r
       LEFT JOIN solicitacoes s ON s.id = r.solicitacao_id WHERE r.id = ${contaId}`;
     clienteId = c?.cliente_id ?? null;
     // Se o boleto veio de um pedido, o anexo fica no pedido (aparece em todas as parcelas dele).

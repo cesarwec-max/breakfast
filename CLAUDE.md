@@ -43,7 +43,11 @@ que uso comercial pede o plano Pro.
   `estoque` (produtos e movimentos entrada/saída/ajuste; saldo = soma), `pedidos` (lançar o pedido já desconta o estoque; cancelar/excluir devolve; editar ajusta),
   `financeiro` (solicitação de NF → PDF, de boleto → JPG, gerados no navegador por `components/gerar-arquivo.tsx`;
   no celular dá para enviar direto ao WhatsApp), `receber` e `pagar`.
-- Boletos gerados no Financeiro entram sozinhos em Contas a receber.
+- **Todo pedido gera conta em A receber** (`src/lib/receber-pedido.ts`, `sincronizarReceber`): valor total, vencimento =
+  "pagar até" ou a data de entrega, marcada `contas_receber.automatica` com `pedido_id`. Editar ajusta; cancelar/excluir
+  remove; pedir boleto do pedido (lançando em A receber) substitui a conta automática pelos boletos. Conta já recebida
+  nunca é apagada nem alterada. Pedidos antigos: migração única `receber-dos-pedidos` + botão "Lançar em A receber".
+- Boletos gerados no Financeiro entram sozinhos em Contas a receber (ligados ao pedido, se houver).
 - **Anexos** (notas, boletos, XML devolvidos pelo financeiro): tabela `anexos`, arquivo guardado no próprio banco
   (`bytea`), ligado ao pedido (ou à conta a receber, se ela não veio de um pedido). Envio por ação do servidor
   (`app/(app)/anexos-actions.ts`, até 4 MB; fotos grandes são reduzidas no navegador), download só com login em
