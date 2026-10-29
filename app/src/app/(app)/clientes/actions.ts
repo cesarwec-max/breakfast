@@ -47,7 +47,8 @@ export async function excluirCliente(id: number) {
   const [uso] = await sql<{ n: number }[]>`
     SELECT (SELECT count(*) FROM pedidos WHERE cliente_id = ${id})
          + (SELECT count(*) FROM contas_receber WHERE cliente_id = ${id})
-         + (SELECT count(*) FROM solicitacoes WHERE cliente_id = ${id}) AS n`;
+         + (SELECT count(*) FROM solicitacoes WHERE cliente_id = ${id})
+         + (SELECT count(*) FROM anexos WHERE cliente_id = ${id}) AS n`;
   if (Number(uso.n) > 0) redirect(`/clientes/${id}?erro=em-uso`);
   await sql`DELETE FROM clientes WHERE id = ${id}`;
   revalidatePath("/", "layout");

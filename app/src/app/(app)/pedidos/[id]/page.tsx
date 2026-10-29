@@ -2,10 +2,12 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { exigirLogin } from "@/lib/auth";
-import { obterPedido } from "@/lib/dados";
+import { listarAnexos, obterPedido } from "@/lib/dados";
+import { anexosTela } from "@/lib/anexos";
+import { Anexos } from "@/components/anexos";
 import { brl, dataBR, qtd } from "@/lib/formato";
 import { Confirmar, Enviar } from "@/components/botoes";
-import { Aviso, Cartao, Selo, Titulo, cls } from "@/components/ui";
+import { Aviso, Cartao, Secao, Selo, Titulo, cls } from "@/components/ui";
 import { cancelarPedido, excluirPedido, marcarEntregue, reabrirPedido } from "../actions";
 import { SeloEntrega } from "../selo";
 
@@ -23,6 +25,7 @@ export default async function PedidoPagina({
   const { novo, salvo } = await searchParams;
   const p = Number.isInteger(id) ? await obterPedido(id) : null;
   if (!p) notFound();
+  const anexos = anexosTela(await listarAnexos({ pedidoId: id }));
 
   return (
     <>
@@ -135,6 +138,13 @@ export default async function PedidoPagina({
           {p.status === "cancelado" && <Selo>Cancelado</Selo>}
         </div>
       </div>
+
+      <Secao titulo="Nota fiscal e boleto emitidos">
+        <p className="-mt-2 mb-3 text-sm text-muted">
+          Anexe aqui os arquivos que o financeiro devolver. Eles também aparecem em Contas a receber e na ficha do cliente.
+        </p>
+        <Anexos anexos={anexos} alvo={{ pedidoId: id }} />
+      </Secao>
     </>
   );
 }

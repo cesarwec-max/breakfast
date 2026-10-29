@@ -2,7 +2,9 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { exigirLogin } from "@/lib/auth";
-import { listarContasReceber, listarPedidos, obterCliente } from "@/lib/dados";
+import { listarAnexos, listarContasReceber, listarPedidos, obterCliente } from "@/lib/dados";
+import { anexosTela } from "@/lib/anexos";
+import { Anexos } from "@/components/anexos";
 import { brl, dataBR, hoje } from "@/lib/formato";
 import { ClienteForm } from "@/components/cliente-form";
 import { Confirmar } from "@/components/botoes";
@@ -24,10 +26,12 @@ export default async function ClientePagina({
   const cliente = Number.isInteger(id) ? await obterCliente(id) : null;
   if (!cliente) notFound();
 
-  const [pedidos, contas] = await Promise.all([
+  const [pedidos, contas, anexosBrutos] = await Promise.all([
     listarPedidos({ clienteId: id, limite: 10 }),
     listarContasReceber("abertos", hoje(), id),
+    listarAnexos({ clienteId: id }),
   ]);
+  const anexos = anexosTela(anexosBrutos);
   const emAberto = contas.reduce((s, c) => s + c.valor, 0);
 
   return (
@@ -50,6 +54,10 @@ export default async function ClientePagina({
       )}
 
       <ClienteForm key={JSON.stringify(cliente)} acao={atualizarCliente.bind(null, id)} inicial={cliente} />
+
+      <Secao titulo={`Notas e boletos emitidos (${anexos.length})`}>
+        <Anexos anexos={anexos} vazio="Nenhum documento anexado. Anexe a nota e o boleto na página do pedido." />
+      </Secao>
 
       <Secao titulo="Últimos pedidos">
         {pedidos.length === 0 ? (

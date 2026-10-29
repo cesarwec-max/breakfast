@@ -136,6 +136,7 @@ export type Pedido = {
   criado_em: Date;
   total: number;
   itens: ItemPedido[];
+  anexos: number;
 };
 
 const selectPedido = () => sql`
@@ -146,6 +147,7 @@ const selectPedido = () => sql`
       nullif(concat_ws('/', nullif(c.cidade, ''), nullif(c.uf, '')), '')
     ) AS endereco,
     COALESCE((SELECT SUM(i.quantidade * i.preco_unitario) FROM pedido_itens i WHERE i.pedido_id = pe.id), 0)::numeric AS total,
+    (SELECT count(*)::int FROM anexos a WHERE a.pedido_id = pe.id) AS anexos,
     COALESCE((
       SELECT json_agg(json_build_object(
         'produto_id', i.produto_id, 'produto', p.nome, 'sabor', p.sabor, 'unidade', p.unidade,
@@ -230,6 +232,7 @@ export type ContaReceber = {
   valor: number;
   vencimento: string;
   pago_em: string | null;
+  pedido_id: number | null;
 };
 
 export type ContaPagar = {
@@ -252,7 +255,10 @@ function condicaoFiltro(filtro: FiltroConta, hoje: string) {
 
 export async function listarContasReceber(filtro: FiltroConta, hoje: string, clienteId?: number) {
   return sql<ContaReceber[]>`
-    SELECT r.*, c.nome AS cliente FROM contas_receber r JOIN clientes c ON c.id = r.cliente_id
+    SELECT r.*, c.nome AS cliente, s.pedido_id
+    FROM contas_receber r
+    JOIN clientes c ON c.id = r.cliente_id
+    LEFT JOIN solicitacoes s ON s.id = r.solicitacao_id
     WHERE ${condicaoFiltro(filtro, hoje)}
       AND ${clienteId ? sql`r.cliente_id = ${clienteId}` : sql`true`}
     ORDER BY ${filtro === "pagos" ? sql`r.pago_em DESC, r.vencimento DESC` : sql`r.vencimento ASC, r.id ASC`}
@@ -279,4 +285,41 @@ export async function totaisContas(tabela: "contas_receber" | "contas_pagar", ho
       COUNT(*) FILTER (WHERE pago_em IS NULL AND vencimento < ${hoje})::int AS qtd_vencido
     FROM ${sql(tabela)}`;
   return t;
+}
+
+// ---------- Anexos (notas e boletos emitidos) ----------
+
+export type TipoAnexo = "nf" | "boleto" | "outro";
+
+export type Anexo = {
+  id: number;
+  cliente_id: number;
+  pedido_id: number | null;
+  conta_receber_id: number | null;
+  tipo: TipoAnexo;
+  nome_arquivo: string;
+  mime: string;
+  tamanho: number;
+  criado_em: Date;
+};
+
+const COLUNAS_ANEXO = sql`id, cliente_id, pedido_id, conta_receber_id, tipo, nome_arquivo, mime, tamanho, criado_em`;
+
+export async function listarAnexos(filtro: { pedidoId?: number; clienteId?: number; contaIds?: number[]; pedidoIds?: number[] }) {
+  const conds = [];
+  if (filtro.pedidoId) conds.push(sql`pedido_id = ${filtro.pedidoId}`);
+  if (filtro.clienteId) conds.push(sql`cliente_id = ${filtro.clienteId}`);
+  if (filtro.contaIds?.length || filtro.pedidoIds?.length) {
+    const ids = filtro.contaIds?.length ? filtro.contaIds : [0];
+    const ped = filtro.pedidoIds?.length ? filtro.pedidoIds : [0];
+    conds.push(sql`(conta_receber_id IN ${sql(ids)} OR pedido_id IN ${sql(ped)})`);
+  }
+  if (conds.length === 0) return [];
+  const where = conds.reduce((a, c) => sql`${a} AND ${c}`);
+  return sql<Anexo[]>`SELECT ${COLUNAS_ANEXO} FROM anexos WHERE ${where} ORDER BY tipo, criado_em DESC`;
+}
+
+export async function obterAnexo(id: number) {
+  const [a] = await sql<(Anexo & { conteudo: Buffer })[]>`SELECT ${COLUNAS_ANEXO}, conteudo FROM anexos WHERE id = ${id}`;
+  return a ?? null;
 }

@@ -95,6 +95,23 @@ CREATE TABLE IF NOT EXISTS contas_pagar (
 // Mudanças depois da primeira versão
 const ATUALIZACOES = `
 ALTER TABLE produtos ADD COLUMN IF NOT EXISTS sabor text NOT NULL DEFAULT '';
+
+-- Notas fiscais, boletos e outros arquivos devolvidos pelo financeiro
+CREATE TABLE IF NOT EXISTS anexos (
+  id serial PRIMARY KEY,
+  cliente_id integer NOT NULL REFERENCES clientes(id),
+  pedido_id integer REFERENCES pedidos(id) ON DELETE SET NULL,
+  conta_receber_id integer REFERENCES contas_receber(id) ON DELETE SET NULL,
+  tipo text NOT NULL CHECK (tipo IN ('nf','boleto','outro')),
+  nome_arquivo text NOT NULL,
+  mime text NOT NULL,
+  tamanho integer NOT NULL,
+  conteudo bytea NOT NULL,
+  criado_em timestamptz NOT NULL DEFAULT now()
+);
+CREATE INDEX IF NOT EXISTS anexos_pedido ON anexos (pedido_id);
+CREATE INDEX IF NOT EXISTS anexos_cliente ON anexos (cliente_id);
+CREATE INDEX IF NOT EXISTS anexos_conta ON anexos (conta_receber_id);
 `;
 
 export async function migrar() {

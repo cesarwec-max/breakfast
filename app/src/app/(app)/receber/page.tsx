@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import { exigirLogin } from "@/lib/auth";
-import { listarContasReceber, totaisContas, type FiltroConta } from "@/lib/dados";
+import { listarAnexos, listarContasReceber, totaisContas, type FiltroConta } from "@/lib/dados";
+import { anexosTela } from "@/lib/anexos";
 import { brl, hoje, somarDias } from "@/lib/formato";
 import { opcoesFormulario } from "@/lib/opcoes";
 import { Enviar } from "@/components/botoes";
@@ -30,6 +31,14 @@ export default async function Receber({ searchParams }: { searchParams: Promise<
     opcoesFormulario(),
   ]);
   const voltar = `/receber?filtro=${filtro}`;
+  // Notas e boletos anexados: do pedido de origem ou da própria conta
+  const brutos = await listarAnexos({
+    contaIds: contas.map((c) => c.id),
+    pedidoIds: contas.map((c) => c.pedido_id).filter((x): x is number => !!x),
+  });
+  const telas = anexosTela(brutos);
+  const anexosDa = (contaId: number, pedidoId: number | null) =>
+    telas.filter((_, i) => brutos[i].conta_receber_id === contaId || (!!pedidoId && brutos[i].pedido_id === pedidoId));
 
   return (
     <>
@@ -54,7 +63,7 @@ export default async function Receber({ searchParams }: { searchParams: Promise<
           tabela="contas_receber"
           voltar={voltar}
           rotuloPago="Recebido"
-          contas={contas.map((c) => ({ ...c, nome: c.cliente, href: `/clientes/${c.cliente_id}` }))}
+          contas={contas.map((c) => ({ ...c, nome: c.cliente, href: `/clientes/${c.cliente_id}`, anexos: anexosDa(c.id, c.pedido_id) }))}
         />
       </Secao>
 

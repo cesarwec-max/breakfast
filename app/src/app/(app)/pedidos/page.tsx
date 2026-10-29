@@ -105,7 +105,14 @@ export default async function Pedidos({ searchParams }: { searchParams: Promise<
                     {p.observacao && <p className="mt-2 text-xs text-muted">📝 {p.observacao}</p>}
                   </Link>
                   <div className="mt-3 flex items-center justify-between border-t border-line pt-3">
-                    <span className="tabular font-semibold">{brl(p.total)}</span>
+                    <span className="flex items-center gap-2">
+                      <span className="tabular font-semibold">{brl(p.total)}</span>
+                      {p.anexos > 0 && (
+                        <span className="text-xs text-muted" title="Documentos anexados">
+                          📎 {p.anexos}
+                        </span>
+                      )}
+                    </span>
                     {p.status === "pendente" && (
                       <form action={marcarEntregue.bind(null, p.id, "/pedidos")}>
                         <Enviar className={cls.botaoPequeno} pendente="…">

@@ -44,6 +44,12 @@ que uso comercial pede o plano Pro.
   `financeiro` (solicitação de NF → PDF, de boleto → JPG, gerados no navegador por `components/gerar-arquivo.tsx`;
   no celular dá para enviar direto ao WhatsApp), `receber` e `pagar`.
 - Boletos gerados no Financeiro entram sozinhos em Contas a receber.
+- **Anexos** (notas, boletos, XML devolvidos pelo financeiro): tabela `anexos`, arquivo guardado no próprio banco
+  (`bytea`), ligado ao pedido (ou à conta a receber, se ela não veio de um pedido). Envio por ação do servidor
+  (`app/(app)/anexos-actions.ts`, até 4 MB; fotos grandes são reduzidas no navegador), download só com login em
+  `/anexos/[id]`. Aparecem no pedido, em Contas a receber (pelo pedido de origem do boleto) e na ficha do cliente.
+  Regras em `src/lib/anexos.ts` (PDF, XML e fotos; SVG não é aceito; XML sempre baixa, nunca abre na tela).
+  O Neon gratuito tem 0,5 GB: acompanhe o espaço se o volume de anexos crescer.
 - **Solicitação de NF (para o contador):** A4 simples, cópia fiel do modelo do usuário
   `Solicitacao_NF_SPORT_BAR_MOOCA_R69500_FINAL.pdf` (tabelas, faixa laranja do total, "Instruções ao contador").
   PDF de **texto** (Helvetica, selecionável) feito com `pdf-lib` em `src/lib/nf-contador.ts`; prévia em HTML com as

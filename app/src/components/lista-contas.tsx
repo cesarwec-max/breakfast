@@ -2,6 +2,7 @@ import Link from "next/link";
 import { brl, dataBR, diasEntre, hoje, valorCampo } from "@/lib/formato";
 import { atualizarConta, desfazerPago, excluirConta, marcarPago } from "@/app/(app)/contas-actions";
 import { Confirmar, Enviar } from "./botoes";
+import { Anexos, type AnexoTela } from "./anexos";
 import { Selo, Vazio, cls } from "./ui";
 
 export type LinhaConta = {
@@ -12,6 +13,9 @@ export type LinhaConta = {
   valor: number;
   vencimento: string;
   pago_em: string | null;
+  pedido_id?: number | null;
+  /** Só em Contas a receber: notas e boletos anexados. */
+  anexos?: AnexoTela[];
 };
 
 export function SeloVencimento({ vencimento, pago_em }: { vencimento: string; pago_em: string | null }) {
@@ -54,6 +58,14 @@ export function ListaContas({
               <div className="text-sm text-muted">
                 Vence {dataBR(c.vencimento)}
                 {c.descricao && ` · ${c.descricao}`}
+                {c.pedido_id && (
+                  <>
+                    {" · "}
+                    <Link href={`/pedidos/${c.pedido_id}`} className={cls.link}>
+                      ver pedido
+                    </Link>
+                  </>
+                )}
               </div>
             </div>
             <div className="text-right">
@@ -87,12 +99,25 @@ export function ListaContas({
                 </div>
               </form>
             </details>
+            {c.anexos && (
+              <details className="group">
+                <summary className={`${cls.botaoPequeno} cursor-pointer list-none`}>📎 Anexar nota/boleto</summary>
+                <div className="mt-2">
+                  <Anexos anexos={[]} alvo={{ contaId: c.id }} />
+                </div>
+              </details>
+            )}
             <form action={excluirConta.bind(null, tabela, c.id, voltar)} className="ml-auto">
               <Confirmar mensagem="Excluir este boleto?" className="text-xs text-muted hover:text-danger">
                 excluir
               </Confirmar>
             </form>
           </div>
+          {c.anexos && c.anexos.length > 0 && (
+            <div className="mt-2">
+              <Anexos anexos={c.anexos} compacto />
+            </div>
+          )}
         </li>
       ))}
     </ul>
