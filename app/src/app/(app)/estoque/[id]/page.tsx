@@ -4,6 +4,7 @@ import { exigirLogin } from "@/lib/auth";
 import { listarMovimentos, obterProduto } from "@/lib/dados";
 import { qtd, valorCampo } from "@/lib/formato";
 import { Confirmar, Enviar } from "@/components/botoes";
+import { FotoProduto } from "@/components/foto-produto";
 import { MovimentoForm } from "@/components/movimento-form";
 import { ListaMovimentos } from "@/components/movimentos";
 import { Aviso, Campo, Cartao, Numero, Secao, Titulo, cls } from "@/components/ui";
@@ -41,6 +42,9 @@ export default async function ProdutoPagina({
         </div>
         <Cartao>
           <h2 className="mb-3 font-semibold">Dados do produto</h2>
+          <div className="mb-4">
+            <FotoProduto id={id} temFoto={produto.tem_foto} />
+          </div>
           <form action={atualizarProduto.bind(null, id)} className="grid gap-3 sm:grid-cols-2">
             <Campo rotulo="Nome *" className="sm:col-span-2">
               <input name="nome" required defaultValue={produto.nome} className={cls.input} />

@@ -119,6 +119,12 @@ ALTER TABLE anexos ADD COLUMN IF NOT EXISTS conta_pagar_id integer REFERENCES co
 CREATE INDEX IF NOT EXISTS anexos_conta_pagar ON anexos (conta_pagar_id);
 -- Boletos lançados juntos (parcelas da mesma compra) compartilham o "lote" e os anexos
 ALTER TABLE contas_pagar ADD COLUMN IF NOT EXISTS lote integer;
+
+-- Status "em rota" (saiu para entrega) e foto opcional do produto
+ALTER TABLE pedidos DROP CONSTRAINT IF EXISTS pedidos_status_check;
+ALTER TABLE pedidos ADD CONSTRAINT pedidos_status_check CHECK (status IN ('pendente','em_rota','entregue','cancelado'));
+ALTER TABLE produtos ADD COLUMN IF NOT EXISTS foto bytea;
+ALTER TABLE produtos ADD COLUMN IF NOT EXISTS foto_mime text;
 `;
 
 export async function migrar() {

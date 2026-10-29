@@ -89,3 +89,21 @@ export async function excluirProduto(id: number) {
   revalidatePath("/", "layout");
   redirect("/estoque");
 }
+
+/** Foto do produto (aparece no JPG de pedidos). Chega já reduzida pelo navegador. */
+export async function salvarFotoProduto(id: number, form: FormData): Promise<{ erro?: string }> {
+  await exigirLogin();
+  const f = form.get("foto");
+  if (!(f instanceof File) || f.size === 0) return { erro: "Escolha uma foto." };
+  if (!["image/jpeg", "image/png", "image/webp"].includes(f.type)) return { erro: "Envie uma foto JPG, PNG ou WEBP." };
+  if (f.size > 2 * 1024 * 1024) return { erro: "Foto muito grande (máximo 2 MB)." };
+  await sql`UPDATE produtos SET foto = ${Buffer.from(await f.arrayBuffer())}, foto_mime = ${f.type} WHERE id = ${id}`;
+  revalidatePath("/", "layout");
+  return {};
+}
+
+export async function removerFotoProduto(id: number) {
+  await exigirLogin();
+  await sql`UPDATE produtos SET foto = NULL, foto_mime = NULL WHERE id = ${id}`;
+  revalidatePath("/", "layout");
+}

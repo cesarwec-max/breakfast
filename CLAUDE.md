@@ -58,6 +58,17 @@ que uso comercial pede o plano Pro.
   PDF de **texto** (Helvetica, selecionável) feito com `pdf-lib` em `src/lib/nf-contador.ts`; prévia em HTML com as
   mesmas medidas em `components/folha-nf-contador.tsx`. Nome do arquivo: `Solicitacao_NF_<RAZAO>_R<centavos>.pdf`.
   **Não mude o layout sem o usuário pedir: o contador está acostumado com ele.**
+- **JPG para a equipe** (`/pedidos/equipe`): folha "Solicitações de pedidos" no visual do modelo do usuário
+  (vermelho/preto), com os pedidos a entregar (pendentes e em rota), semana e observações gerais editáveis
+  (`components/folha-pedidos.tsx` + `components/equipe-jpg.tsx`). Usa a foto do produto, se houver.
+- **Status dos pedidos:** pendente → em rota (saiu para entrega) → entregue (dá baixa no estoque); ou cancelado.
+  `listarPedidos({ status: "pendente" })` traz pendentes **e** em rota (tudo que ainda vai ser entregue).
+- **Foto do produto:** opcional, no banco (`produtos.foto`, reduzida para 900 px no navegador), servida com login
+  em `/produtos/[id]/foto`. Nunca selecione `p.*` de produtos (traria a foto): use as colunas explícitas.
+- Imagens (JPG) são feitas com `html-to-image` em `fotografar()` (`components/gerar-arquivo.tsx`), embutindo só as
+  fontes latinas. **Para testar a geração, use o Playwright** (`mcr.microsoft.com/playwright:v1.64.0-noble`,
+  volume `teologia_playwright_modules`): no painel do navegador escondido a captura parece travar, porque ele pausa
+  as animações.
 - **Solicitação de boleto:** folha de 1024 px com a arte da marca (`components/documentos.tsx`) que vira JPG com
   `html-to-image`. O usuário aprovou como está.
 - Textos fixos (slogan, e-mail do financeiro breakfastpix@gmail.com) ficam em `src/lib/empresa.ts`.

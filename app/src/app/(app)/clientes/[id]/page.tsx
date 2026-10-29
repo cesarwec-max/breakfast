@@ -72,7 +72,9 @@ export default async function ClientePagina({
                   </span>
                   <span className="flex items-center gap-2">
                     <span className="tabular">{brl(p.total)}</span>
-                    <Selo tom={p.status === "pendente" ? "aviso" : p.status === "entregue" ? "ok" : "neutro"}>{p.status}</Selo>
+                    <Selo tom={p.status === "entregue" ? "ok" : p.status === "cancelado" ? "neutro" : "aviso"}>
+                      {{ pendente: "pendente", em_rota: "em rota", entregue: "entregue", cancelado: "cancelado" }[p.status]}
+                    </Selo>
                   </span>
                 </Link>
               </li>

@@ -68,11 +68,13 @@ export type Produto = {
   preco: number;
   ativo: boolean;
   saldo: number;
+  tem_foto: boolean;
 };
 
 export async function listarProdutos({ incluirInativos = false } = {}) {
   return sql<Produto[]>`
-    SELECT p.*, COALESCE(SUM(CASE WHEN m.tipo = 'saida' THEN -m.quantidade ELSE m.quantidade END), 0)::numeric AS saldo
+    SELECT p.id, p.nome, p.sabor, p.unidade, p.preco, p.ativo, p.criado_em, (p.foto IS NOT NULL) AS tem_foto,
+      COALESCE(SUM(CASE WHEN m.tipo = 'saida' THEN -m.quantidade ELSE m.quantidade END), 0)::numeric AS saldo
     FROM produtos p
     LEFT JOIN estoque_movimentos m ON m.produto_id = p.id
     WHERE ${incluirInativos ? sql`true` : sql`p.ativo`}
@@ -82,7 +84,8 @@ export async function listarProdutos({ incluirInativos = false } = {}) {
 
 export async function obterProduto(id: number) {
   const [p] = await sql<Produto[]>`
-    SELECT p.*, COALESCE(SUM(CASE WHEN m.tipo = 'saida' THEN -m.quantidade ELSE m.quantidade END), 0)::numeric AS saldo
+    SELECT p.id, p.nome, p.sabor, p.unidade, p.preco, p.ativo, p.criado_em, (p.foto IS NOT NULL) AS tem_foto,
+      COALESCE(SUM(CASE WHEN m.tipo = 'saida' THEN -m.quantidade ELSE m.quantidade END), 0)::numeric AS saldo
     FROM produtos p
     LEFT JOIN estoque_movimentos m ON m.produto_id = p.id
     WHERE p.id = ${id}
@@ -113,12 +116,16 @@ export async function listarMovimentos({ produtoId, limite = 50 }: { produtoId?:
 
 // ---------- Pedidos ----------
 
-export type StatusPedido = "pendente" | "entregue" | "cancelado";
+export type StatusPedido = "pendente" | "em_rota" | "entregue" | "cancelado";
+
+/** Ainda não entregue (pendente ou em rota). */
+export const aEntregar = (s: StatusPedido) => s === "pendente" || s === "em_rota";
 
 export type ItemPedido = {
   produto_id: number;
   produto: string;
   sabor: string;
+  tem_foto: boolean;
   unidade: string;
   quantidade: number;
   preco_unitario: number;
@@ -150,7 +157,7 @@ const selectPedido = () => sql`
     (SELECT count(*)::int FROM anexos a WHERE a.pedido_id = pe.id) AS anexos,
     COALESCE((
       SELECT json_agg(json_build_object(
-        'produto_id', i.produto_id, 'produto', p.nome, 'sabor', p.sabor, 'unidade', p.unidade,
+        'produto_id', i.produto_id, 'produto', p.nome, 'sabor', p.sabor, 'tem_foto', p.foto IS NOT NULL, 'unidade', p.unidade,
         'quantidade', i.quantidade, 'preco_unitario', i.preco_unitario) ORDER BY i.id)
       FROM pedido_itens i JOIN produtos p ON p.id = i.produto_id WHERE i.pedido_id = pe.id
     ), '[]') AS itens
@@ -164,7 +171,10 @@ function normalizarItens(p: Pedido) {
 export async function listarPedidos({ status, clienteId, limite = 200 }: { status?: StatusPedido; clienteId?: number; limite?: number }) {
   const linhas = await sql<Pedido[]>`
     ${selectPedido()}
-    WHERE ${status ? sql`pe.status = ${status}` : sql`true`}
+    WHERE ${
+      // "pendente" na lista = tudo que ainda vai ser entregue (inclui os que já saíram para entrega)
+      status === "pendente" ? sql`pe.status IN ('pendente', 'em_rota')` : status ? sql`pe.status = ${status}` : sql`true`
+    }
       AND ${clienteId ? sql`pe.cliente_id = ${clienteId}` : sql`true`}
     ORDER BY ${status === "pendente" ? sql`pe.data_entrega ASC, pe.id ASC` : sql`pe.data_entrega DESC, pe.id DESC`}
     LIMIT ${limite}`;
@@ -358,4 +368,9 @@ export async function listarAnexosPagar(lotes: number[]) {
     FROM anexos a JOIN contas_pagar cp ON cp.id = a.conta_pagar_id
     WHERE COALESCE(cp.lote, cp.id) IN ${sql(lotes)}
     ORDER BY a.tipo, a.criado_em DESC`;
+}
+
+export async function obterFotoProduto(id: number) {
+  const [f] = await sql<{ foto: Buffer | null; foto_mime: string | null }[]>`SELECT foto, foto_mime FROM produtos WHERE id = ${id}`;
+  return f?.foto ? { foto: f.foto, mime: f.foto_mime ?? "image/jpeg" } : null;
 }

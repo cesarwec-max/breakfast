@@ -44,7 +44,7 @@ export async function atualizarPedido(id: number, form: FormData) {
   const itens = lerItens(form);
   await sql.begin(async (tx) => {
     const [p] = await tx<{ status: string }[]>`SELECT status FROM pedidos WHERE id = ${id} FOR UPDATE`;
-    if (p?.status !== "pendente") throw new Error("Só pedidos pendentes podem ser editados.");
+    if (p?.status !== "pendente" && p?.status !== "em_rota") throw new Error("Só pedidos a entregar podem ser editados.");
     await tx`UPDATE pedidos SET ${tx(dados)} WHERE id = ${id}`;
     await gravarItens(tx, id, itens);
   });
@@ -59,13 +59,21 @@ export async function marcarEntregue(id: number, voltar?: string) {
     const [p] = await tx<{ status: string; cliente: string }[]>`
       SELECT pe.status, c.nome AS cliente FROM pedidos pe JOIN clientes c ON c.id = pe.cliente_id
       WHERE pe.id = ${id} FOR UPDATE OF pe`;
-    if (!p || p.status !== "pendente") return;
+    if (!p || (p.status !== "pendente" && p.status !== "em_rota")) return;
     await tx`UPDATE pedidos SET status = 'entregue', entregue_em = now() WHERE id = ${id}`;
     await tx`
       INSERT INTO estoque_movimentos (produto_id, tipo, quantidade, observacao, pedido_id)
       SELECT produto_id, 'saida', SUM(quantidade), ${"Entrega para " + p.cliente}, ${id}
       FROM pedido_itens WHERE pedido_id = ${id} GROUP BY produto_id`;
   });
+  atualizar();
+  redirect(voltar === "/pedidos" ? voltar : `/pedidos/${id}`);
+}
+
+/** Pedido saiu para entrega. */
+export async function marcarEmRota(id: number, voltar?: string) {
+  await exigirLogin();
+  await sql`UPDATE pedidos SET status = 'em_rota' WHERE id = ${id} AND status = 'pendente'`;
   atualizar();
   redirect(voltar === "/pedidos" ? voltar : `/pedidos/${id}`);
 }

@@ -10,11 +10,11 @@ import { cls } from "./ui";
 export type AnexoTela = { id: number; tipo: string; nome_arquivo: string; mime: string; tamanho: number; data: string };
 
 /** Fotos grandes do celular são reduzidas antes de enviar (cabem no limite e carregam rápido). */
-async function reduzirFoto(f: File) {
-  if (!f.type.startsWith("image/") || f.size < 1.5 * 1024 * 1024) return f;
+export async function reduzirFoto(f: File, ladoMax = 2200, aPartirDe = 1.5 * 1024 * 1024) {
+  if (!f.type.startsWith("image/") || f.size < aPartirDe) return f;
   try {
     const img = await createImageBitmap(f);
-    const escala = Math.min(1, 2200 / Math.max(img.width, img.height));
+    const escala = Math.min(1, ladoMax / Math.max(img.width, img.height));
     const c = document.createElement("canvas");
     c.width = Math.round(img.width * escala);
     c.height = Math.round(img.height * escala);

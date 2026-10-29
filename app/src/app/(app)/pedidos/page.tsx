@@ -5,7 +5,7 @@ import { listarPedidos, type Pedido, type StatusPedido } from "@/lib/dados";
 import { brl, dataBR, diasEntre, hoje, qtd } from "@/lib/formato";
 import { Enviar } from "@/components/botoes";
 import { Abas, Cartao, Titulo, Vazio, cls } from "@/components/ui";
-import { marcarEntregue } from "./actions";
+import { marcarEmRota, marcarEntregue } from "./actions";
 import { SeloEntrega } from "./selo";
 
 export const metadata: Metadata = { title: "Pedidos" };
@@ -53,6 +53,9 @@ export default async function Pedidos({ searchParams }: { searchParams: Promise<
   return (
     <>
       <Titulo titulo="Pedidos" subtitulo={status === "pendente" ? `${pedidos.length} a entregar` : undefined}>
+        <Link href="/pedidos/equipe" className={cls.botao2}>
+          🖼️ JPG para a equipe
+        </Link>
         <Link href="/pedidos/novo" className={cls.botao}>
           + Novo pedido
         </Link>
@@ -113,12 +116,21 @@ export default async function Pedidos({ searchParams }: { searchParams: Promise<
                         </span>
                       )}
                     </span>
-                    {p.status === "pendente" && (
-                      <form action={marcarEntregue.bind(null, p.id, "/pedidos")}>
-                        <Enviar className={cls.botaoPequeno} pendente="…">
-                          ✓ Entregue
-                        </Enviar>
-                      </form>
+                    {(p.status === "pendente" || p.status === "em_rota") && (
+                      <div className="flex gap-1">
+                        {p.status === "pendente" && (
+                          <form action={marcarEmRota.bind(null, p.id, "/pedidos")}>
+                            <Enviar className={cls.botaoPequeno} pendente="…">
+                              🚚 Em rota
+                            </Enviar>
+                          </form>
+                        )}
+                        <form action={marcarEntregue.bind(null, p.id, "/pedidos")}>
+                          <Enviar className={cls.botaoPequeno} pendente="…">
+                            ✓ Entregue
+                          </Enviar>
+                        </form>
+                      </div>
                     )}
                   </div>
                 </Cartao>

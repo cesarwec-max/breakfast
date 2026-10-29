@@ -12,17 +12,29 @@ type Props =
   | { tipo: "nf"; id: number; data: string; dados: DadosNF }
   | { tipo: "boleto"; id: number; data: string; dados: DadosBoleto };
 
-/** Tira uma "foto" da folha em alta resolução (JPG). */
-async function fotografar(folha: HTMLElement) {
+// Fontes embutidas na imagem: só as versões latinas (o português cabe nelas). Embutir todas
+// (com alfabetos indiano, cirílico…) deixava a imagem tão pesada que o navegador travava.
+let fontesLatinas: Promise<string> | null = null;
+function cssFontes(folha: HTMLElement) {
+  fontesLatinas ??= import("html-to-image").then(async ({ getFontEmbedCSS }) => {
+    const css = await getFontEmbedCSS(folha);
+    return (css.match(/@font-face\s*{[^}]*}/g) ?? []).filter((b) => /unicode-range:\s*U\+0-FF\b/i.test(b)).join("\n");
+  });
+  return fontesLatinas;
+}
+
+/** Tira uma "foto" da folha em alta resolução (JPG, como data URL). */
+export async function fotografar(folha: HTMLElement) {
   const { toJpeg } = await import("html-to-image");
   await document.fonts.ready;
   const opcoes = {
-    width: LARGURA_FOLHA,
+    width: folha.offsetWidth || LARGURA_FOLHA,
     height: folha.offsetHeight,
     pixelRatio: 2,
     quality: 0.92,
     backgroundColor: "#ffffff",
     cacheBust: false,
+    fontEmbedCSS: await cssFontes(folha),
   };
   // A primeira captura às vezes sai sem imagens em alguns navegadores; a segunda vem completa.
   await toJpeg(folha, opcoes);

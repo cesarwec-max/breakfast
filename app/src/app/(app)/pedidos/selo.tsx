@@ -5,6 +5,7 @@ import { Selo } from "@/components/ui";
 export function SeloEntrega({ pedido }: { pedido: Pick<Pedido, "status" | "data_entrega"> }) {
   if (pedido.status === "entregue") return <Selo tom="ok">Entregue</Selo>;
   if (pedido.status === "cancelado") return <Selo>Cancelado</Selo>;
+  if (pedido.status === "em_rota") return <Selo tom="destaque">🚚 Em rota</Selo>;
   const dias = diasEntre(hoje(), pedido.data_entrega);
   if (dias < 0) return <Selo tom="perigo">Atrasado</Selo>;
   if (dias === 0) return <Selo tom="destaque">Entregar hoje</Selo>;

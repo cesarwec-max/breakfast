@@ -2,13 +2,13 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { exigirLogin } from "@/lib/auth";
-import { listarAnexos, obterPedido } from "@/lib/dados";
+import { aEntregar, listarAnexos, obterPedido } from "@/lib/dados";
 import { anexosTela } from "@/lib/anexos";
 import { Anexos } from "@/components/anexos";
 import { brl, dataBR, qtd } from "@/lib/formato";
 import { Confirmar, Enviar } from "@/components/botoes";
 import { Aviso, Cartao, Secao, Selo, Titulo, cls } from "@/components/ui";
-import { cancelarPedido, excluirPedido, marcarEntregue, reabrirPedido } from "../actions";
+import { cancelarPedido, excluirPedido, marcarEmRota, marcarEntregue, reabrirPedido } from "../actions";
 import { SeloEntrega } from "../selo";
 
 export const metadata: Metadata = { title: "Pedido" };
@@ -30,7 +30,7 @@ export default async function PedidoPagina({
   return (
     <>
       <Titulo titulo={`Pedido #${p.id}`} voltar={{ href: "/pedidos", rotulo: "Pedidos" }}>
-        {p.status === "pendente" && (
+        {aEntregar(p.status) && (
           <Link href={`/pedidos/${id}/editar`} className={cls.botao2}>
             Editar
           </Link>
@@ -95,6 +95,13 @@ export default async function PedidoPagina({
 
         <div className="space-y-3">
           {p.status === "pendente" && (
+            <form action={marcarEmRota.bind(null, id, undefined)}>
+              <Enviar className={`${cls.botao2} w-full`} pendente="Registrando…">
+                🚚 Saiu para entrega
+              </Enviar>
+            </form>
+          )}
+          {aEntregar(p.status) && (
             <form action={marcarEntregue.bind(null, id, undefined)}>
               <Enviar className="inline-flex w-full items-center justify-center gap-2 rounded-lg bg-ok px-4 py-2.5 text-sm font-semibold text-white shadow-sm transition hover:brightness-110 disabled:opacity-50" pendente="Registrando…">
                 ✓ Marcar como entregue
