@@ -13,7 +13,14 @@ function lerPedido(form: FormData) {
   const data_entrega = String(form.get("data_entrega") ?? "");
   if (!cliente_id) throw new Error("Escolha o cliente.");
   if (!/^\d{4}-\d{2}-\d{2}$/.test(data_entrega)) throw new Error("Informe a data de entrega.");
-  return { cliente_id, data_entrega, observacao: String(form.get("observacao") ?? "").trim() };
+  const venc = String(form.get("vencimento_pagamento") ?? "");
+  return {
+    cliente_id,
+    data_entrega,
+    observacao: String(form.get("observacao") ?? "").trim(),
+    forma_pagamento: String(form.get("forma_pagamento") ?? "").trim().slice(0, 60),
+    vencimento_pagamento: /^\d{4}-\d{2}-\d{2}$/.test(venc) ? venc : null,
+  };
 }
 
 async function gravarItens(tx: Tx, pedidoId: number, itens: ReturnType<typeof lerItens>) {

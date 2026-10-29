@@ -90,6 +90,11 @@ export default async function PedidoPagina({
               </tr>
             </tfoot>
           </table>
+          <p className="mt-3 rounded-lg bg-background px-3 py-2 text-sm">
+            💳 Pagamento: <strong>{p.forma_pagamento || "não informado"}</strong>
+            {p.vencimento_pagamento && <> · até {dataBR(p.vencimento_pagamento)}</>}
+            {/pix/i.test(p.forma_pagamento) && <span className="text-muted"> · chave breakfastpix@gmail.com</span>}
+          </p>
           {p.observacao && <p className="mt-3 rounded-lg bg-background px-3 py-2 text-sm">📝 {p.observacao}</p>}
         </Cartao>
 
@@ -110,7 +115,10 @@ export default async function PedidoPagina({
             </form>
           )}
           <Cartao className="space-y-2">
-            <div className="text-sm font-semibold">Financeiro</div>
+            <div className="text-sm font-semibold">Documentos</div>
+            <Link href={`/pedidos/${id}/ordem`} className={`${cls.botao} w-full`}>
+              📄 Gerar ordem de pedido
+            </Link>
             <Link href={`/financeiro/nf/nova?pedido=${id}`} className={`${cls.botao2} w-full`}>
               Solicitar nota fiscal
             </Link>

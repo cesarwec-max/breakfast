@@ -139,6 +139,8 @@ export type Pedido = {
   data_entrega: string;
   status: StatusPedido;
   observacao: string;
+  forma_pagamento: string;
+  vencimento_pagamento: string | null;
   entregue_em: Date | null;
   criado_em: Date;
   total: number;

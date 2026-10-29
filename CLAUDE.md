@@ -64,6 +64,11 @@ que uso comercial pede o plano Pro.
 - **JPG de pendentes de pagamento** (`/receber/jpg`): boletos em aberto com selo Atrasado/Pendente e total geral,
   no visual do modelo do usuário (laranja/grafite) — `components/folha-receber.tsx` + `receber-jpg.tsx`.
   Prévia + botões de JPG ficam em `components/folha-jpg.tsx` (usado também pelo JPG da equipe).
+- **Ordem de pedido** (`/pedidos/[id]/ordem`): documento para o cliente (JPG ou PDF) no visual do boleto, com
+  dados do cliente, itens, total e forma de pagamento (`pedidos.forma_pagamento`, `vencimento_pagamento`).
+  Se for PIX, mostra a chave `breakfastpix@gmail.com` e um QR Code "Pix copia e cola" com o valor do pedido
+  (`src/lib/pix.ts`, padrão do Banco Central; nome/cidade do PIX em `src/lib/empresa.ts`). `FolhaOrdem` fica em
+  `components/documentos.tsx`; `FolhaJPG` com `comPdf` oferece também o PDF.
 - **Status dos pedidos:** pendente → em rota (saiu para entrega) → entregue; ou cancelado.
   **Estoque:** `ajustarEstoque()` em `pedidos/actions.ts` deixa os itens descontados enquanto o pedido não está
   cancelado e registra só a diferença com o motivo ("Pedido #5 lançado/editado/cancelado/reaberto/excluído").

@@ -1,10 +1,14 @@
 /* eslint-disable @next/next/no-img-element */
-// Solicitações de nota fiscal e de boleto no visual da Breakfast.
+// Solicitação de boleto e ordem de pedido no visual da Breakfast.
 // Desenhadas em 1024 px de largura; viram PDF/JPG em gerar-arquivo.tsx.
 
 import {
   Award,
+  CalendarDays,
+  CreditCard,
   FileText,
+  NotebookPen,
+  QrCode,
   Handshake,
   Mail,
   MapPin,
@@ -17,7 +21,7 @@ import {
 } from "lucide-react";
 import type { Cliente, DadosBoleto } from "@/lib/dados";
 import { EMPRESA, orientacoesBoleto } from "@/lib/empresa";
-import { brl, dataBR } from "@/lib/formato";
+import { brl, dataBR, qtd } from "@/lib/formato";
 
 export const LARGURA_FOLHA = 1024;
 
@@ -286,6 +290,123 @@ export function FolhaBoleto({ id, data, dados }: { id: number; data: string; dad
         </Secao>
 
         <Orientacoes numero={3} itens={orientacoes} />
+        <Contato />
+      </div>
+      <Rodape />
+    </div>
+  );
+}
+
+// ---------- Ordem de pedido (enviada ao cliente) ----------
+
+export type DadosOrdem = {
+  id: number;
+  emitidaEm: string; // AAAA-MM-DD
+  cliente: Cliente;
+  dataEntrega: string;
+  itens: { produto: string; sabor: string; unidade: string; quantidade: number; preco_unitario: number }[];
+  total: number;
+  formaPagamento: string;
+  vencimentoPagamento: string | null;
+  observacao: string;
+};
+
+export function ehPix(forma: string) {
+  return /\bpix\b/i.test(forma);
+}
+
+export function FolhaOrdem({ dados, qrPix, pixCopiaECola }: { dados: DadosOrdem; qrPix?: string; pixCopiaECola?: string }) {
+  const pix = ehPix(dados.formaPagamento);
+  const forma = dados.formaPagamento || "A combinar";
+  return (
+    <div className="bg-white font-sans text-[#1c1c1e]" style={{ width: LARGURA_FOLHA }}>
+      <Cabecalho
+        linha1="Ordem de"
+        linha2="Pedido"
+        texto="Confira abaixo os itens e a forma de pagamento do seu pedido. Obrigado pela preferência!"
+        numero={dados.id}
+        data={dataBR(dados.emitidaEm)}
+      />
+      <div className="space-y-10 px-7 pt-9">
+        <DadosCliente cliente={dados.cliente} contato />
+
+        <Secao numero={2} titulo="Itens do pedido">
+          <div className="mb-4 flex items-center gap-3 font-condensada text-[22px] text-[#2d4f8f]">
+            <CalendarDays size={24} className="text-[#ea4316]" />
+            <span className="font-medium uppercase text-[#1c1c1e]">Entrega prevista:</span> {dataBR(dados.dataEntrega)}
+          </div>
+          <table className="w-full border-collapse font-condensada">
+            <thead>
+              <tr className="bg-[#1c1c1e] text-[18px] uppercase text-white">
+                <th className="rounded-l-[8px] px-4 py-3 text-left font-normal">Produto</th>
+                <th className="px-2 py-3 font-normal">Quantidade</th>
+                <th className="px-2 py-3 font-normal">Valor unitário</th>
+                <th className="rounded-r-[8px] px-4 py-3 text-right font-normal">Valor total</th>
+              </tr>
+            </thead>
+            <tbody>
+              {dados.itens.map((i, n) => (
+                <tr key={n} className="border-b border-[#ececef]">
+                  <td className="px-4 py-4">
+                    <div className="text-[25px] font-medium uppercase leading-tight">{i.produto}</div>
+                    {i.sabor && <div className="text-[20px] font-normal text-[#ea4316]">Sabor {i.sabor}</div>}
+                  </td>
+                  <td className="px-2 py-4 text-center">
+                    <span className="text-[30px] font-medium">{qtd(i.quantidade)}</span>
+                    {i.unidade !== "un" && <span className="ml-1 text-[16px] text-[#6b6b70]">{i.quantidade !== 1 && /^[a-zà-ú]{4,}$/i.test(i.unidade) && !/s$/i.test(i.unidade) ? i.unidade + "s" : i.unidade}</span>}
+                  </td>
+                  <td className="px-2 py-4 text-center text-[27px] font-medium">{brl(i.preco_unitario)}</td>
+                  <td className="px-4 py-4 text-right text-[28px] font-semibold text-[#ea4316]">{brl(i.quantidade * i.preco_unitario)}</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+          <Total rotulo="Total do pedido" valor={dados.total} />
+        </Secao>
+
+        <Secao numero={3} titulo="Forma de pagamento">
+          <div className="grid grid-cols-2 border-b border-[#ececef]">
+            <Info icone={<CreditCard size={26} strokeWidth={1.8} />} rotulo="Pagamento" valor={forma} />
+            <div className="border-l border-[#ececef] pl-6">
+              <Info
+                icone={<CalendarDays size={26} strokeWidth={1.8} />}
+                rotulo="Pagar até"
+                valor={dados.vencimentoPagamento ? dataBR(dados.vencimentoPagamento) : "Na entrega"}
+              />
+            </div>
+          </div>
+          {pix && (
+            <div className="mt-5 flex items-center gap-7 rounded-[16px] border-2 border-[#f7941d] bg-[#fff6ee] p-5">
+              {qrPix ? (
+                <img src={qrPix} alt="QR Code do PIX" className="size-[210px] shrink-0 rounded-[8px] bg-white p-2" />
+              ) : (
+                <span className="flex size-[120px] shrink-0 items-center justify-center rounded-full" style={{ backgroundImage: GRADIENTE }}>
+                  <QrCode size={64} className="text-white" />
+                </span>
+              )}
+              <div className="min-w-0 font-condensada">
+                <div className="text-[20px] font-medium uppercase text-[#4a4a4f]">Chave PIX (e-mail)</div>
+                <div className="text-[40px] font-semibold leading-tight" style={textoGradiente}>
+                  {EMPRESA.chavePix}
+                </div>
+                <div className="mt-1 text-[22px]">
+                  Valor: <strong>{brl(dados.total)}</strong>
+                </div>
+                {qrPix && <div className="mt-2 text-[17px] text-[#2d4f8f]">Aponte a câmera do app do banco para o QR Code ou use o Pix copia e cola:</div>}
+                {pixCopiaECola && <div className="mt-1 break-all font-sans text-[12px] leading-snug text-[#4a4a4f]">{pixCopiaECola}</div>}
+              </div>
+            </div>
+          )}
+        </Secao>
+
+        {dados.observacao && (
+          <Secao numero={4} titulo="Observações">
+            <div className="flex items-start gap-4 font-condensada text-[22px] text-[#2d4f8f]">
+              <NotebookPen size={28} className="mt-1 shrink-0 text-[#ea4316]" />
+              <span className="whitespace-pre-line">{dados.observacao}</span>
+            </div>
+          </Secao>
+        )}
         <Contato />
       </div>
       <Rodape />

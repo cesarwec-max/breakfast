@@ -5,8 +5,19 @@ import { LARGURA_FOLHA } from "./documentos";
 import { fotografar } from "./gerar-arquivo";
 import { cls } from "./ui";
 
-/** Prévia reduzida de uma folha de 1024 px + botões para enviar (WhatsApp no celular) ou baixar como JPG. */
-export function FolhaJPG({ nomeArquivo, titulo, children }: { nomeArquivo: string; titulo: string; children: React.ReactNode }) {
+/** Prévia reduzida de uma folha de 1024 px + botões para enviar (WhatsApp no celular) ou baixar como JPG (e PDF, se pedir). */
+export function FolhaJPG({
+  nomeArquivo,
+  titulo,
+  comPdf = false,
+  children,
+}: {
+  nomeArquivo: string;
+  titulo: string;
+  /** Também oferece o arquivo em PDF (a mesma imagem dentro de uma página). */
+  comPdf?: boolean;
+  children: React.ReactNode;
+}) {
   const [ocupado, setOcupado] = useState(false);
   const [erro, setErro] = useState("");
   const caixa = useRef<HTMLDivElement>(null);
@@ -32,13 +43,26 @@ export function FolhaJPG({ nomeArquivo, titulo, children }: { nomeArquivo: strin
     return () => obs.disconnect();
   }, []);
 
-  async function agir(compartilhar: boolean) {
+  async function gerar(pdf: boolean) {
+    const url = await fotografar(folha.current!);
+    const bytes = new Uint8Array(await (await fetch(url)).arrayBuffer());
+    if (!pdf) return new File([bytes], nomeArquivo, { type: "image/jpeg" });
+    const { PDFDocument } = await import("pdf-lib");
+    const doc = await PDFDocument.create();
+    doc.setTitle(titulo);
+    doc.setAuthor("Breakfast");
+    const jpg = await doc.embedJpg(bytes);
+    const largura = 595.28; // largura de uma A4
+    const altura = (largura * jpg.height) / jpg.width;
+    doc.addPage([largura, altura]).drawImage(jpg, { x: 0, y: 0, width: largura, height: altura });
+    return new File([(await doc.save()) as BlobPart], nomeArquivo.replace(/\.jpg$/, ".pdf"), { type: "application/pdf" });
+  }
+
+  async function agir(compartilhar: boolean, pdf = false) {
     setOcupado(true);
     setErro("");
     try {
-      const url = await fotografar(folha.current!);
-      const bytes = new Uint8Array(await (await fetch(url)).arrayBuffer());
-      const f = new File([bytes], nomeArquivo, { type: "image/jpeg" });
+      const f = await gerar(pdf);
       if (compartilhar) {
         await navigator.share({ files: [f], title: titulo }).catch(() => {});
       } else {
@@ -67,6 +91,16 @@ export function FolhaJPG({ nomeArquivo, titulo, children }: { nomeArquivo: strin
         <button onClick={() => agir(false)} disabled={ocupado} className={podeCompartilhar ? cls.botao2 : cls.botao}>
           {ocupado ? "Gerando…" : "Baixar JPG"}
         </button>
+        {comPdf && podeCompartilhar && (
+          <button onClick={() => agir(true, true)} disabled={ocupado} className={cls.botao2}>
+            {ocupado ? "Gerando…" : "Enviar PDF"}
+          </button>
+        )}
+        {comPdf && (
+          <button onClick={() => agir(false, true)} disabled={ocupado} className={cls.botao2}>
+            {ocupado ? "Gerando…" : "Baixar PDF"}
+          </button>
+        )}
       </div>
       {erro && <p className="text-sm text-danger">{erro}</p>}
       <div

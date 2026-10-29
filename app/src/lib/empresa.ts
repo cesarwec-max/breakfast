@@ -3,7 +3,15 @@
 export const EMPRESA = {
   slogan: "Distribuindo sabor e praticidade",
   emailFinanceiro: "breakfastpix@gmail.com",
+  /** Chave PIX (e-mail) da empresa */
+  chavePix: "breakfastpix@gmail.com",
+  /** Nome e cidade que vão no QR Code do PIX (sem acento, como pede o padrão do Banco Central) */
+  pixNome: "BREAKFAST",
+  pixCidade: "SAO PAULO",
 };
+
+/** Opções de forma de pagamento do pedido. */
+export const FORMAS_PAGAMENTO = ["PIX", "Boleto bancário", "Dinheiro", "Cartão", "Transferência bancária", "A combinar"];
 
 export function orientacoesBoleto(qtd: number) {
   return [

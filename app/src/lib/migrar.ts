@@ -125,6 +125,10 @@ ALTER TABLE pedidos DROP CONSTRAINT IF EXISTS pedidos_status_check;
 ALTER TABLE pedidos ADD CONSTRAINT pedidos_status_check CHECK (status IN ('pendente','em_rota','entregue','cancelado'));
 ALTER TABLE produtos ADD COLUMN IF NOT EXISTS foto bytea;
 ALTER TABLE produtos ADD COLUMN IF NOT EXISTS foto_mime text;
+
+-- Forma de pagamento do pedido (aparece na ordem de pedido)
+ALTER TABLE pedidos ADD COLUMN IF NOT EXISTS forma_pagamento text NOT NULL DEFAULT '';
+ALTER TABLE pedidos ADD COLUMN IF NOT EXISTS vencimento_pagamento date;
 `;
 
 export async function migrar() {
