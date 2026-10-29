@@ -12,12 +12,26 @@ export async function enviarAnexo(form: FormData): Promise<{ erro?: string }> {
   const tipo = String(form.get("tipo") ?? "");
   const pedidoId = Number(form.get("pedido_id")) || null;
   const contaId = Number(form.get("conta_id")) || null;
+  const contaPagarId = Number(form.get("conta_pagar_id")) || null;
 
   if (!(arquivo instanceof File) || arquivo.size === 0) return { erro: "Escolha um arquivo." };
   if (!TIPOS_ANEXO.some((t) => t.valor === tipo)) return { erro: "Tipo de documento inválido." };
   if (arquivo.size > LIMITE_ANEXO) return { erro: `"${arquivo.name}" passa de 4 MB.` };
   const mime = mimeAceito(arquivo.name, arquivo.type);
   if (!mime) return { erro: `"${arquivo.name}": envie PDF, XML ou foto.` };
+
+  const conteudo = Buffer.from(await arquivo.arrayBuffer());
+
+  // Contas a pagar (fábrica): anexo sem cliente, preso à conta
+  if (contaPagarId) {
+    const [cp] = await sql<{ id: number }[]>`SELECT id FROM contas_pagar WHERE id = ${contaPagarId}`;
+    if (!cp) return { erro: "Conta a pagar não encontrada." };
+    await sql`
+      INSERT INTO anexos (conta_pagar_id, tipo, nome_arquivo, mime, tamanho, conteudo)
+      VALUES (${contaPagarId}, ${tipo}, ${arquivo.name.slice(0, 200)}, ${mime}, ${arquivo.size}, ${conteudo})`;
+    revalidatePath("/", "layout");
+    return {};
+  }
 
   // O cliente vem do pedido/conta (não do navegador), para o anexo nunca cair no cliente errado.
   let clienteId: number | null = null;
@@ -39,7 +53,6 @@ export async function enviarAnexo(form: FormData): Promise<{ erro?: string }> {
   }
   if (!clienteId) return { erro: "Pedido ou conta não encontrado." };
 
-  const conteudo = Buffer.from(await arquivo.arrayBuffer());
   await sql`
     INSERT INTO anexos (cliente_id, pedido_id, conta_receber_id, tipo, nome_arquivo, mime, tamanho, conteudo)
     VALUES (${clienteId}, ${pedidoFinal}, ${contaFinal}, ${tipo}, ${arquivo.name.slice(0, 200)}, ${mime}, ${arquivo.size}, ${conteudo})`;

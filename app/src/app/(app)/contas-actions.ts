@@ -37,7 +37,17 @@ export async function desfazerPago(tabela: Tabela, id: number, voltar?: string) 
 export async function excluirConta(tabela: Tabela, id: number, voltar?: string) {
   await exigirLogin();
   validar(tabela);
-  await sql`DELETE FROM ${sql(tabela)} WHERE id = ${id}`;
+  await sql.begin(async (tx) => {
+    if (tabela === "contas_pagar") {
+      // Os anexos passam para outra parcela da mesma compra; se não houver, são apagados junto.
+      const [outra] = await tx<{ id: number }[]>`
+        SELECT o.id FROM contas_pagar c JOIN contas_pagar o ON COALESCE(o.lote, o.id) = COALESCE(c.lote, c.id) AND o.id <> c.id
+        WHERE c.id = ${id} ORDER BY o.id LIMIT 1`;
+      if (outra) await tx`UPDATE anexos SET conta_pagar_id = ${outra.id} WHERE conta_pagar_id = ${id}`;
+      else await tx`DELETE FROM anexos WHERE conta_pagar_id = ${id}`;
+    }
+    await tx`DELETE FROM ${tx(tabela)} WHERE id = ${id}`;
+  });
   revalidatePath("/", "layout");
   redirect(voltarPara(tabela, voltar));
 }
@@ -77,14 +87,19 @@ export async function lancarPagar(form: FormData) {
   const fornecedor = String(form.get("fornecedor") ?? "").trim() || "Fábrica";
   const descricao = String(form.get("descricao") ?? "").trim();
   const parcelas = lerParcelas(form);
-  await sql`INSERT INTO contas_pagar ${sql(
-    parcelas.map((p, i) => ({
-      fornecedor,
-      descricao: [descricao, parcelas.length > 1 ? `parcela ${i + 1}/${parcelas.length}` : ""].filter(Boolean).join(" · "),
-      valor: p.valor,
-      vencimento: p.vencimento,
-    })),
-  )}`;
+  await sql.begin(async (tx) => {
+    const ids = await tx<{ id: number }[]>`INSERT INTO contas_pagar ${tx(
+      parcelas.map((p, i) => ({
+        fornecedor,
+        descricao: [descricao, parcelas.length > 1 ? `parcela ${i + 1}/${parcelas.length}` : ""].filter(Boolean).join(" · "),
+        valor: p.valor,
+        vencimento: p.vencimento,
+      })),
+    )} RETURNING id`;
+    // As parcelas desta compra ficam no mesmo lote: a nota e os boletos anexados valem para todas.
+    const lote = Math.min(...ids.map((r) => r.id));
+    await tx`UPDATE contas_pagar SET lote = ${lote} WHERE id IN ${tx(ids.map((r) => r.id))}`;
+  });
   revalidatePath("/", "layout");
   redirect("/pagar?lancado=" + parcelas.length);
 }

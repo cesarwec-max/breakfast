@@ -96,7 +96,7 @@ function Lista({ anexos, mostrarExcluir }: { anexos: AnexoTela[]; mostrarExcluir
   );
 }
 
-function Enviar({ alvo, tipoInicial = "nf", compacto = false }: { alvo: { pedidoId?: number; contaId?: number }; tipoInicial?: string; compacto?: boolean }) {
+function Enviar({ alvo, tipoInicial = "nf", compacto = false }: { alvo: { pedidoId?: number; contaId?: number; contaPagarId?: number }; tipoInicial?: string; compacto?: boolean }) {
   const router = useRouter();
   const entrada = useRef<HTMLInputElement>(null);
   const [tipo, setTipo] = useState(tipoInicial);
@@ -118,6 +118,7 @@ function Enviar({ alvo, tipoInicial = "nf", compacto = false }: { alvo: { pedido
       fd.set("tipo", tipo);
       if (alvo.pedidoId) fd.set("pedido_id", String(alvo.pedidoId));
       if (alvo.contaId) fd.set("conta_id", String(alvo.contaId));
+      if (alvo.contaPagarId) fd.set("conta_pagar_id", String(alvo.contaPagarId));
       try {
         const r = await enviarAnexo(fd);
         if (r.erro) erros.push(r.erro);
@@ -173,7 +174,7 @@ export function Anexos({
   podeAnexar = true,
 }: {
   anexos: AnexoTela[];
-  alvo?: { pedidoId?: number; contaId?: number };
+  alvo?: { pedidoId?: number; contaId?: number; contaPagarId?: number };
   vazio?: string;
   compacto?: boolean;
   podeAnexar?: boolean;
@@ -181,7 +182,7 @@ export function Anexos({
   const temNF = anexos.some((a) => a.tipo === "nf");
   return (
     <div className="space-y-2">
-      {anexos.length > 0 ? <Lista anexos={anexos} mostrarExcluir={podeAnexar} /> : !compacto && <p className="text-sm text-muted">{vazio}</p>}
+      {anexos.length > 0 ? <Lista anexos={anexos} mostrarExcluir={podeAnexar} /> : !compacto && vazio && <p className="text-sm text-muted">{vazio}</p>}
       {podeAnexar && alvo && <Enviar alvo={alvo} tipoInicial={temNF ? "boleto" : "nf"} compacto={compacto} />}
     </div>
   );

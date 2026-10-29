@@ -1,7 +1,8 @@
 import type { Metadata } from "next";
 import { exigirLogin } from "@/lib/auth";
 import { sql } from "@/lib/db";
-import { listarContasPagar, totaisContas, type FiltroConta } from "@/lib/dados";
+import { listarAnexosPagar, listarContasPagar, totaisContas, type FiltroConta } from "@/lib/dados";
+import { anexosTela } from "@/lib/anexos";
 import { brl, hoje, somarDias } from "@/lib/formato";
 import { Enviar } from "@/components/botoes";
 import { ListaContas } from "@/components/lista-contas";
@@ -29,10 +30,17 @@ export default async function Pagar({ searchParams }: { searchParams: Promise<{ 
     sql<{ fornecedor: string }[]>`SELECT DISTINCT fornecedor FROM contas_pagar ORDER BY fornecedor`,
   ]);
   const voltar = `/pagar?filtro=${filtro}`;
+  // Nota e boletos da fábrica: valem para todas as parcelas da mesma compra (lote)
+  const brutos = await listarAnexosPagar([...new Set(contas.map((c) => c.lote))]);
+  const telas = anexosTela(brutos);
+  const anexosDoLote = (lote: number) => telas.filter((_, i) => brutos[i].lote === lote);
 
   return (
     <>
-      <Titulo titulo="Contas a pagar" subtitulo="Boletos da fábrica e de outros fornecedores." />
+      <Titulo
+        titulo="Contas a pagar"
+        subtitulo="Boletos da fábrica e de outros fornecedores. Anexe a nota e os boletos da compra para não depender do papel."
+      />
       {sp.lancado && <Aviso tom="ok">{sp.lancado} boleto(s) lançado(s).</Aviso>}
 
       <div className="grid gap-3 sm:grid-cols-3">
@@ -49,7 +57,7 @@ export default async function Pagar({ searchParams }: { searchParams: Promise<{ 
 
       <Secao titulo="Boletos">
         <Abas atual={filtro} itens={FILTROS.map((f) => ({ ...f, href: `/pagar?filtro=${f.valor}` }))} />
-        <ListaContas tabela="contas_pagar" voltar={voltar} rotuloPago="Pago" contas={contas.map((c) => ({ ...c, nome: c.fornecedor }))} />
+        <ListaContas tabela="contas_pagar" voltar={voltar} rotuloPago="Pago" contas={contas.map((c) => ({ ...c, nome: c.fornecedor, anexos: anexosDoLote(c.lote) }))} />
       </Secao>
 
       <Secao titulo="Lançar boletos">

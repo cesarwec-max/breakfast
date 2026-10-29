@@ -237,6 +237,8 @@ export type ContaReceber = {
 
 export type ContaPagar = {
   id: number;
+  /** Parcelas lançadas juntas têm o mesmo lote (o id da primeira). */
+  lote: number;
   fornecedor: string;
   descricao: string;
   valor: number;
@@ -267,7 +269,7 @@ export async function listarContasReceber(filtro: FiltroConta, hoje: string, cli
 
 export async function listarContasPagar(filtro: FiltroConta, hoje: string) {
   return sql<ContaPagar[]>`
-    SELECT * FROM contas_pagar
+    SELECT *, COALESCE(lote, id) AS lote FROM contas_pagar
     WHERE ${condicaoFiltro(filtro, hoje)}
     ORDER BY ${filtro === "pagos" ? sql`pago_em DESC, vencimento DESC` : sql`vencimento ASC, id ASC`}
     LIMIT 500`;
@@ -293,7 +295,8 @@ export type TipoAnexo = "nf" | "boleto" | "outro";
 
 export type Anexo = {
   id: number;
-  cliente_id: number;
+  cliente_id: number | null;
+  conta_pagar_id: number | null;
   pedido_id: number | null;
   conta_receber_id: number | null;
   tipo: TipoAnexo;
@@ -303,7 +306,7 @@ export type Anexo = {
   criado_em: Date;
 };
 
-const COLUNAS_ANEXO = sql`id, cliente_id, pedido_id, conta_receber_id, tipo, nome_arquivo, mime, tamanho, criado_em`;
+const COLUNAS_ANEXO = sql`id, cliente_id, pedido_id, conta_receber_id, conta_pagar_id, tipo, nome_arquivo, mime, tamanho, criado_em`;
 
 export async function listarAnexos(filtro: { pedidoId?: number; clienteId?: number; contaIds?: number[]; pedidoIds?: number[] }) {
   const conds = [];
@@ -322,4 +325,15 @@ export async function listarAnexos(filtro: { pedidoId?: number; clienteId?: numb
 export async function obterAnexo(id: number) {
   const [a] = await sql<(Anexo & { conteudo: Buffer })[]>`SELECT ${COLUNAS_ANEXO}, conteudo FROM anexos WHERE id = ${id}`;
   return a ?? null;
+}
+
+/** Anexos das contas a pagar, com o lote (compra) a que pertencem. */
+export async function listarAnexosPagar(lotes: number[]) {
+  if (lotes.length === 0) return [];
+  return sql<(Anexo & { lote: number })[]>`
+    SELECT a.id, a.cliente_id, a.pedido_id, a.conta_receber_id, a.conta_pagar_id, a.tipo, a.nome_arquivo, a.mime,
+           a.tamanho, a.criado_em, COALESCE(cp.lote, cp.id) AS lote
+    FROM anexos a JOIN contas_pagar cp ON cp.id = a.conta_pagar_id
+    WHERE COALESCE(cp.lote, cp.id) IN ${sql(lotes)}
+    ORDER BY a.tipo, a.criado_em DESC`;
 }

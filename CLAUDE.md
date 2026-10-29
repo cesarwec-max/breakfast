@@ -50,6 +50,9 @@ que uso comercial pede o plano Pro.
   `/anexos/[id]`. Aparecem no pedido, em Contas a receber (pelo pedido de origem do boleto) e na ficha do cliente.
   Regras em `src/lib/anexos.ts` (PDF, XML e fotos; SVG não é aceito; XML sempre baixa, nunca abre na tela).
   O Neon gratuito tem 0,5 GB: acompanhe o espaço se o volume de anexos crescer.
+- Em **Contas a pagar** também há anexos (nota e boletos da fábrica): `anexos.conta_pagar_id`, sem cliente.
+  Parcelas lançadas juntas ficam no mesmo `contas_pagar.lote` e mostram os mesmos anexos. Ao excluir uma parcela,
+  os anexos passam para outra do mesmo lote; se era a única, são apagados junto (o aviso de confirmação diz isso).
 - **Solicitação de NF (para o contador):** A4 simples, cópia fiel do modelo do usuário
   `Solicitacao_NF_SPORT_BAR_MOOCA_R69500_FINAL.pdf` (tabelas, faixa laranja do total, "Instruções ao contador").
   PDF de **texto** (Helvetica, selecionável) feito com `pdf-lib` em `src/lib/nf-contador.ts`; prévia em HTML com as

@@ -14,7 +14,7 @@ export type LinhaConta = {
   vencimento: string;
   pago_em: string | null;
   pedido_id?: number | null;
-  /** Só em Contas a receber: notas e boletos anexados. */
+  /** Notas e boletos anexados (em Contas a pagar: os da compra toda). */
   anexos?: AnexoTela[];
 };
 
@@ -100,15 +100,22 @@ export function ListaContas({
               </form>
             </details>
             {c.anexos && (
-              <details className="group">
+              <details className="group order-last open:w-full">
                 <summary className={`${cls.botaoPequeno} cursor-pointer list-none`}>📎 Anexar nota/boleto</summary>
                 <div className="mt-2">
-                  <Anexos anexos={[]} alvo={{ contaId: c.id }} />
+                  <Anexos anexos={[]} vazio="" alvo={tabela === "contas_receber" ? { contaId: c.id } : { contaPagarId: c.id }} />
                 </div>
               </details>
             )}
             <form action={excluirConta.bind(null, tabela, c.id, voltar)} className="ml-auto">
-              <Confirmar mensagem="Excluir este boleto?" className="text-xs text-muted hover:text-danger">
+              <Confirmar
+                mensagem={
+                  tabela === "contas_pagar" && c.anexos?.length
+                    ? "Excluir este boleto? Se for a única parcela desta compra, os documentos anexados também serão apagados."
+                    : "Excluir este boleto?"
+                }
+                className="text-xs text-muted hover:text-danger"
+              >
                 excluir
               </Confirmar>
             </form>

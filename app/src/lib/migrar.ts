@@ -112,6 +112,13 @@ CREATE TABLE IF NOT EXISTS anexos (
 CREATE INDEX IF NOT EXISTS anexos_pedido ON anexos (pedido_id);
 CREATE INDEX IF NOT EXISTS anexos_cliente ON anexos (cliente_id);
 CREATE INDEX IF NOT EXISTS anexos_conta ON anexos (conta_receber_id);
+
+-- Anexos da fábrica (contas a pagar): não têm cliente
+ALTER TABLE anexos ALTER COLUMN cliente_id DROP NOT NULL;
+ALTER TABLE anexos ADD COLUMN IF NOT EXISTS conta_pagar_id integer REFERENCES contas_pagar(id) ON DELETE SET NULL;
+CREATE INDEX IF NOT EXISTS anexos_conta_pagar ON anexos (conta_pagar_id);
+-- Boletos lançados juntos (parcelas da mesma compra) compartilham o "lote" e os anexos
+ALTER TABLE contas_pagar ADD COLUMN IF NOT EXISTS lote integer;
 `;
 
 export async function migrar() {
