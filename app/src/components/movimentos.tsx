@@ -39,7 +39,7 @@ export function ListaMovimentos({ movimentos, voltar, mostrarProduto = true }: {
               </div>
               <div className="text-xs text-muted">{dataHora.format(m.criado_em)}</div>
             </div>
-            {!m.pedido_id && (
+            {!m.pedido_id && !m.observacao.startsWith("Pedido #") && (
               <form action={excluirMovimento.bind(null, m.id, voltar)}>
                 <Confirmar mensagem="Apagar este lançamento? O saldo será recalculado." className="text-xs text-muted hover:text-danger">
                   apagar

@@ -26,7 +26,7 @@ export default async function Estoque({ searchParams }: { searchParams: Promise<
 
   return (
     <>
-      <Titulo titulo="Estoque" subtitulo="Saldo atual de cada produto. Pedidos entregues dão baixa sozinhos." />
+      <Titulo titulo="Estoque" subtitulo="Saldo atual de cada produto. Cada pedido lançado já desconta os itens; cancelar devolve." />
       {salvo && <Aviso tom="ok">Produto cadastrado.</Aviso>}
 
       {produtos.length === 0 ? (
@@ -38,14 +38,14 @@ export default async function Estoque({ searchParams }: { searchParams: Promise<
               <tr>
                 <th className="px-4 py-2 font-semibold">Produto</th>
                 <th className="px-4 py-2 text-right font-semibold">Saldo</th>
-                <th className="hidden px-4 py-2 text-right font-semibold sm:table-cell">Em pedidos</th>
+                <th className="hidden px-4 py-2 text-right font-semibold sm:table-cell">A entregar</th>
                 <th className="hidden px-4 py-2 text-right font-semibold sm:table-cell">Preço</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-line">
               {produtos.map((p) => {
                 const res = reservado.get(p.id) ?? 0;
-                const falta = p.saldo - res < 0;
+                const falta = p.saldo < 0;
                 return (
                   <tr key={p.id} className="hover:bg-background">
                     <td className="px-4 py-3">
@@ -55,7 +55,7 @@ export default async function Estoque({ searchParams }: { searchParams: Promise<
                       {p.sabor && <div className="text-xs text-accent">{p.sabor}</div>}
                       {res > 0 && (
                         <div className={`text-xs sm:hidden ${falta ? "text-danger" : "text-muted"}`}>
-                          {qtd(res)} em pedidos pendentes
+                          {qtd(res)} em pedidos a entregar (já descontado)
                         </div>
                       )}
                     </td>

@@ -40,7 +40,7 @@ que uso comercial pede o plano Pro.
 - Login com uma senha só (`APP_SENHA` em `app/.env.local`, cookie assinado com `SESSAO_SEGREDO`).
   Toda página e toda ação do servidor chamam `exigirLogin()`.
 - Módulos (`src/app/(app)/`): `clientes` (cadastro único: entrega + dados fiscais, CEP via ViaCEP),
-  `estoque` (produtos e movimentos entrada/saída/ajuste; saldo = soma), `pedidos` (entregar dá baixa no estoque),
+  `estoque` (produtos e movimentos entrada/saída/ajuste; saldo = soma), `pedidos` (lançar o pedido já desconta o estoque; cancelar/excluir devolve; editar ajusta),
   `financeiro` (solicitação de NF → PDF, de boleto → JPG, gerados no navegador por `components/gerar-arquivo.tsx`;
   no celular dá para enviar direto ao WhatsApp), `receber` e `pagar`.
 - Boletos gerados no Financeiro entram sozinhos em Contas a receber.
@@ -61,7 +61,10 @@ que uso comercial pede o plano Pro.
 - **JPG para a equipe** (`/pedidos/equipe`): folha "Solicitações de pedidos" no visual do modelo do usuário
   (vermelho/preto), com os pedidos a entregar (pendentes e em rota), semana e observações gerais editáveis
   (`components/folha-pedidos.tsx` + `components/equipe-jpg.tsx`). Usa a foto do produto, se houver.
-- **Status dos pedidos:** pendente → em rota (saiu para entrega) → entregue (dá baixa no estoque); ou cancelado.
+- **Status dos pedidos:** pendente → em rota (saiu para entrega) → entregue; ou cancelado.
+  **Estoque:** `ajustarEstoque()` em `pedidos/actions.ts` deixa os itens descontados enquanto o pedido não está
+  cancelado e registra só a diferença com o motivo ("Pedido #5 lançado/editado/cancelado/reaberto/excluído").
+  A migração única `estoque-no-lancamento` (tabela `migracoes`) descontou os pedidos que já estavam a entregar.
   `listarPedidos({ status: "pendente" })` traz pendentes **e** em rota (tudo que ainda vai ser entregue).
 - **Foto do produto:** opcional, no banco (`produtos.foto`, reduzida para 900 px no navegador), servida com login
   em `/produtos/[id]/foto`. Nunca selecione `p.*` de produtos (traria a foto): use as colunas explícitas.

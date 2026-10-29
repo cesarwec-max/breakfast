@@ -70,7 +70,8 @@ export async function lancarMovimento(form: FormData) {
 
 export async function excluirMovimento(id: number, voltar: string) {
   await exigirLogin();
-  await sql`DELETE FROM estoque_movimentos WHERE id = ${id} AND pedido_id IS NULL`;
+  // Lançamentos de pedidos (mesmo de pedidos excluídos) não podem ser apagados à mão
+  await sql`DELETE FROM estoque_movimentos WHERE id = ${id} AND pedido_id IS NULL AND observacao NOT LIKE 'Pedido #%'`;
   revalidatePath("/", "layout");
   redirect(voltar.startsWith("/estoque") ? voltar : "/estoque");
 }

@@ -130,4 +130,19 @@ ALTER TABLE produtos ADD COLUMN IF NOT EXISTS foto_mime text;
 export async function migrar() {
   await sql.unsafe(ESQUEMA);
   await sql.unsafe(ATUALIZACOES);
+  await sql.unsafe(`CREATE TABLE IF NOT EXISTS migracoes (nome text PRIMARY KEY, feita_em timestamptz NOT NULL DEFAULT now())`);
+
+  // Uma vez só: o estoque passou a ser descontado no lançamento do pedido (antes era na entrega).
+  // Pedidos que já estavam a entregar recebem o desconto agora.
+  await sql.begin(async (tx) => {
+    const [nova] = await tx`INSERT INTO migracoes (nome) VALUES ('estoque-no-lancamento') ON CONFLICT DO NOTHING RETURNING nome`;
+    if (!nova) return;
+    await tx`
+      INSERT INTO estoque_movimentos (produto_id, tipo, quantidade, observacao, pedido_id)
+      SELECT i.produto_id, 'saida', SUM(i.quantidade), 'Pedido #' || pe.id || ' a entregar (desconto no lançamento)', pe.id
+      FROM pedidos pe JOIN pedido_itens i ON i.pedido_id = pe.id
+      WHERE pe.status IN ('pendente', 'em_rota')
+        AND NOT EXISTS (SELECT 1 FROM estoque_movimentos m WHERE m.pedido_id = pe.id)
+      GROUP BY pe.id, i.produto_id`;
+  });
 }

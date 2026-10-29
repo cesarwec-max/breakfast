@@ -21,6 +21,38 @@ async function gravarItens(tx: Tx, pedidoId: number, itens: ReturnType<typeof le
   await tx`INSERT INTO pedido_itens ${tx(itens.map((i) => ({ ...i, pedido_id: pedidoId })))}`;
 }
 
+/**
+ * Deixa o estoque de acordo com o pedido: enquanto não estiver cancelado, os itens ficam descontados;
+ * cancelado (ou excluído), voltam. Registra só a diferença, com o motivo, para o histórico ficar claro.
+ */
+async function ajustarEstoque(tx: Tx, pedidoId: number, motivo: string, devolverTudo = false) {
+  await tx`
+    WITH desejado AS (
+      SELECT i.produto_id, -SUM(i.quantidade) AS q
+      FROM pedido_itens i JOIN pedidos pe ON pe.id = i.pedido_id
+      WHERE i.pedido_id = ${pedidoId} AND pe.status <> 'cancelado' AND NOT ${devolverTudo}
+      GROUP BY i.produto_id
+    ),
+    atual AS (
+      SELECT produto_id, SUM(CASE WHEN tipo = 'saida' THEN -quantidade ELSE quantidade END) AS q
+      FROM estoque_movimentos WHERE pedido_id = ${pedidoId}
+      GROUP BY produto_id
+    ),
+    diferenca AS (
+      SELECT COALESCE(d.produto_id, a.produto_id) AS produto_id, COALESCE(d.q, 0) - COALESCE(a.q, 0) AS q
+      FROM desejado d FULL JOIN atual a ON a.produto_id = d.produto_id
+    )
+    INSERT INTO estoque_movimentos (produto_id, tipo, quantidade, observacao, pedido_id)
+    SELECT produto_id, CASE WHEN q < 0 THEN 'saida' ELSE 'entrada' END, ABS(q), ${motivo}, ${pedidoId}
+    FROM diferenca WHERE q <> 0`;
+}
+
+async function nomeCliente(tx: Tx, pedidoId: number) {
+  const [c] = await tx<{ nome: string }[]>`
+    SELECT c.nome FROM pedidos pe JOIN clientes c ON c.id = pe.cliente_id WHERE pe.id = ${pedidoId}`;
+  return c?.nome ?? "";
+}
+
 function atualizar() {
   revalidatePath("/", "layout");
 }
@@ -32,6 +64,7 @@ export async function criarPedido(form: FormData) {
   const id = await sql.begin(async (tx) => {
     const [{ id }] = await tx<{ id: number }[]>`INSERT INTO pedidos ${tx(dados)} RETURNING id`;
     await gravarItens(tx, id, itens);
+    await ajustarEstoque(tx, id, `Pedido #${id} lançado (${await nomeCliente(tx, id)})`);
     return id;
   });
   atualizar();
@@ -47,12 +80,13 @@ export async function atualizarPedido(id: number, form: FormData) {
     if (p?.status !== "pendente" && p?.status !== "em_rota") throw new Error("Só pedidos a entregar podem ser editados.");
     await tx`UPDATE pedidos SET ${tx(dados)} WHERE id = ${id}`;
     await gravarItens(tx, id, itens);
+    await ajustarEstoque(tx, id, `Pedido #${id} editado`);
   });
   atualizar();
   redirect(`/pedidos/${id}?salvo=1`);
 }
 
-/** Marca como entregue e dá baixa no estoque. */
+/** Marca como entregue (o estoque já foi descontado quando o pedido foi lançado). */
 export async function marcarEntregue(id: number, voltar?: string) {
   await exigirLogin();
   await sql.begin(async (tx) => {
@@ -61,10 +95,8 @@ export async function marcarEntregue(id: number, voltar?: string) {
       WHERE pe.id = ${id} FOR UPDATE OF pe`;
     if (!p || (p.status !== "pendente" && p.status !== "em_rota")) return;
     await tx`UPDATE pedidos SET status = 'entregue', entregue_em = now() WHERE id = ${id}`;
-    await tx`
-      INSERT INTO estoque_movimentos (produto_id, tipo, quantidade, observacao, pedido_id)
-      SELECT produto_id, 'saida', SUM(quantidade), ${"Entrega para " + p.cliente}, ${id}
-      FROM pedido_itens WHERE pedido_id = ${id} GROUP BY produto_id`;
+    // Garante o desconto (pedidos antigos só descontavam na entrega)
+    await ajustarEstoque(tx, id, `Pedido #${id} entregue (${p.cliente})`);
   });
   atualizar();
   redirect(voltar === "/pedidos" ? voltar : `/pedidos/${id}`);
@@ -78,12 +110,12 @@ export async function marcarEmRota(id: number, voltar?: string) {
   redirect(voltar === "/pedidos" ? voltar : `/pedidos/${id}`);
 }
 
-/** Volta para pendente (desfaz a baixa no estoque, se houve). */
+/** Volta para pendente. Se estava cancelado, os itens saem do estoque de novo. */
 export async function reabrirPedido(id: number) {
   await exigirLogin();
   await sql.begin(async (tx) => {
-    await tx`DELETE FROM estoque_movimentos WHERE pedido_id = ${id}`;
     await tx`UPDATE pedidos SET status = 'pendente', entregue_em = NULL WHERE id = ${id}`;
+    await ajustarEstoque(tx, id, `Pedido #${id} reaberto`);
   });
   atualizar();
   redirect(`/pedidos/${id}`);
@@ -92,8 +124,8 @@ export async function reabrirPedido(id: number) {
 export async function cancelarPedido(id: number) {
   await exigirLogin();
   await sql.begin(async (tx) => {
-    await tx`DELETE FROM estoque_movimentos WHERE pedido_id = ${id}`;
     await tx`UPDATE pedidos SET status = 'cancelado', entregue_em = NULL WHERE id = ${id}`;
+    await ajustarEstoque(tx, id, `Pedido #${id} cancelado (itens devolvidos)`);
   });
   atualizar();
   redirect(`/pedidos/${id}`);
@@ -102,7 +134,8 @@ export async function cancelarPedido(id: number) {
 export async function excluirPedido(id: number) {
   await exigirLogin();
   await sql.begin(async (tx) => {
-    await tx`DELETE FROM estoque_movimentos WHERE pedido_id = ${id}`;
+    // Devolve os itens ao estoque; o histórico continua (sem o vínculo com o pedido apagado)
+    await ajustarEstoque(tx, id, `Pedido #${id} excluído (itens devolvidos)`, true);
     await tx`DELETE FROM pedidos WHERE id = ${id}`;
   });
   atualizar();

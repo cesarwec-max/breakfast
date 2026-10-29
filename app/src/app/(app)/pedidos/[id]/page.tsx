@@ -106,7 +106,7 @@ export default async function PedidoPagina({
               <Enviar className="inline-flex w-full items-center justify-center gap-2 rounded-lg bg-ok px-4 py-2.5 text-sm font-semibold text-white shadow-sm transition hover:brightness-110 disabled:opacity-50" pendente="Registrando…">
                 ✓ Marcar como entregue
               </Enviar>
-              <p className="mt-1 text-xs text-muted">Dá baixa dos itens no estoque.</p>
+              <p className="mt-1 text-xs text-muted">Os itens já saíram do estoque quando o pedido foi lançado.</p>
             </form>
           )}
           <Cartao className="space-y-2">
@@ -122,7 +122,11 @@ export default async function PedidoPagina({
             {p.status !== "pendente" && (
               <form action={reabrirPedido.bind(null, id)}>
                 <Confirmar
-                  mensagem={p.status === "entregue" ? "Voltar para pendente? A baixa no estoque será desfeita." : "Reabrir este pedido?"}
+                  mensagem={
+                    p.status === "cancelado"
+                      ? "Reabrir este pedido? Os itens saem do estoque de novo."
+                      : "Voltar este pedido para pendente?"
+                  }
                   className={cls.botaoPequeno}
                 >
                   Voltar para pendente
@@ -131,13 +135,13 @@ export default async function PedidoPagina({
             )}
             {p.status !== "cancelado" && (
               <form action={cancelarPedido.bind(null, id)}>
-                <Confirmar mensagem="Cancelar este pedido?" className={cls.botaoPequeno}>
+                <Confirmar mensagem="Cancelar este pedido? Os itens voltam para o estoque." className={cls.botaoPequeno}>
                   Cancelar pedido
                 </Confirmar>
               </form>
             )}
             <form action={excluirPedido.bind(null, id)}>
-              <Confirmar mensagem="Excluir este pedido de vez?" className={`${cls.botaoPequeno} text-danger`}>
+              <Confirmar mensagem="Excluir este pedido de vez? Os itens voltam para o estoque." className={`${cls.botaoPequeno} text-danger`}>
                 Excluir
               </Confirmar>
             </form>
