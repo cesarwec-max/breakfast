@@ -1,5 +1,7 @@
 # breakfast
 
+**No ar:** https://breakfastdistribuidora.vercel.app
+
 App de gestão da Breakfast (distribuidora de salgados): pedidos, estoque, financeiro
 (solicitações de nota fiscal em PDF e de boleto em JPG), contas a receber e contas a pagar.
 

@@ -3,21 +3,35 @@
 App de gestão da Breakfast, distribuidora de salgados. Substitui os grupos de WhatsApp de Financeiro, Estoque,
 Pedidos, Contas a receber e Contas a pagar. Ambiente em Docker, no mesmo padrão do `~/code/teologia`.
 
-- **Repositório:** https://github.com/cesarwec-max/breakfast — **privado** até o usuário dizer "pode deployar".
+- **Produção:** https://breakfastdistribuidora.vercel.app (Vercel, projeto `breakfast`, pasta `app/`, região gru1).
+  O endereço automático `breakfast-dusky.vercel.app` também funciona; `breakfast.vercel.app` é de **outra pessoa**.
+- **Banco de produção:** Neon `breakfast-db` (São Paulo), criado pela integração da Vercel; `DATABASE_URL` vem de lá.
+  As tabelas se criam sozinhas ao ligar o servidor (`src/lib/migrar.ts`).
+- **Repositório:** https://github.com/cesarwec-max/breakfast (público). Push para `main` = publicação automática na Vercel.
 - **Usuário:** fala português, não é programador. Responda em português simples, sem jargão, e comece pelo resultado.
+
+## Regras importantes
+
+1. **Nunca publique sem ouvir "pode deployar".** Faça as mudanças, teste em http://localhost:3001 e commite localmente.
+   Nada de push para `main` fora do "pode deployar".
+2. Produção tem dados reais da empresa: não rode comandos que apaguem ou alterem dados no banco de produção
+   sem o usuário pedir. Para testar, use o banco local (contêiner `db`).
+3. O endereço de produção não é ambiente de teste: não digite a senha nele; o usuário faz login.
 
 ## "pode deployar"
 
-Quando o usuário disser **"pode deployar"**, faça sem pedir confirmação de novo:
+Quando o usuário disser **"pode deployar"**, publique sem pedir confirmação de novo:
 
-1. Commite o que estiver pendente e faça `git push` para `main`.
-2. Se o repositório ainda for privado, torne-o **público**:
-   `gh repo edit cesarwec-max/breakfast --visibility public --accept-visibility-change-consequences`
-3. Confira com `gh repo view cesarwec-max/breakfast --json visibility` e responda: público ou não, e a URL.
+1. `bash scripts/deploy.sh "<mensagem de commit em português>"` (da raiz do projeto)
+   - roda tipos, lint e build no contêiner; se falhar, **pare**, corrija e tente de novo;
+   - commita tudo, faz `git push` para `main` e espera a Vercel publicar.
+2. Confira com `curl` que https://breakfastdistribuidora.vercel.app/login responde 200 e diga: publicado ou não, a URL
+   e o que mudou.
 
-Se depois for configurada publicação do site (ex.: Vercel), inclua esse passo aqui também.
-Antes do "pode deployar": nada de deixar o repositório público.
-Commits terminam com as linhas de atribuição pedidas pelo sistema (Co-Authored-By etc.).
+Variáveis na Vercel (produção): `APP_SENHA` (mesma de `app/.env.local`), `SESSAO_SEGREDO`, `DATABASE_URL` (Neon).
+Ver/alterar: `docker compose exec -T app vercel env ls`. Falha na Vercel:
+`docker compose exec -T app vercel inspect <url> --logs`. Plano da Vercel: Hobby (gratuito); o usuário foi avisado
+que uso comercial pede o plano Pro.
 
 ## O app (`app/`)
 
@@ -48,7 +62,8 @@ Commits terminam com as linhas de atribuição pedidas pelo sistema (Co-Authored
 ## Ambiente
 
 - Zorin OS. Docker, Git e GitHub CLI (`gh`, conta `cesarwec-max`) no host. **Node/npm não existem no host** — tudo roda no contêiner.
-- Serviços (`compose.yaml`): `app` = Node 22 + Python 3; `db` = PostgreSQL 17. Sobem sozinhos com o computador
+- Serviços (`compose.yaml`): `app` = Node 22 + Python 3 + Vercel CLI 64.0.2 (login no volume `teologia_vercel_auth`,
+  compartilhado com o projeto teologia; conta `cesarwec-9227`); `db` = PostgreSQL 17. Sobem sozinhos com o computador
   (`restart: unless-stopped`); só rode `docker compose up -d` se alguém tiver parado.
 - Portas do host deslocadas para não conflitar com o `teologia`: 3001→3000, 5174→5173, 8001→8000, 5433→5432.
 - Comandos no app: `docker compose exec -T app bash -c 'cd /workspace/app && <comando>'`.
