@@ -41,13 +41,17 @@ que uso comercial pede o plano Pro.
   Toda página e toda ação do servidor chamam `exigirLogin()`.
 - Módulos (`src/app/(app)/`): `clientes` (cadastro único: entrega + dados fiscais, CEP via ViaCEP),
   `estoque` (produtos e movimentos entrada/saída/ajuste; saldo = soma), `pedidos` (entregar dá baixa no estoque),
-  `financeiro` (solicitação de NF → PDF, de boleto → JPG, gerados no navegador por `src/lib/documento.ts`
-  + `components/gerar-arquivo.tsx`; no celular dá para enviar direto ao WhatsApp), `receber` e `pagar`.
+  `financeiro` (solicitação de NF → PDF, de boleto → JPG, gerados no navegador por `components/gerar-arquivo.tsx`;
+  no celular dá para enviar direto ao WhatsApp), `receber` e `pagar`.
 - Boletos gerados no Financeiro entram sozinhos em Contas a receber.
-- Solicitações: a folha é uma página HTML de 1024 px (`components/documentos.tsx`, no visual do modelo do usuário)
-  que vira JPG com `html-to-image` e PDF (imagem dentro do PDF) com `pdf-lib`, em `components/gerar-arquivo.tsx`.
-  Textos fixos (slogan, e-mail do financeiro breakfastpix@gmail.com, orientações) ficam em `src/lib/empresa.ts`.
-  O boleto segue o mesmo visual da NF; o usuário disse que vai mandar um modelo próprio de boleto.
+- **Solicitação de NF (para o contador):** A4 simples, cópia fiel do modelo do usuário
+  `Solicitacao_NF_SPORT_BAR_MOOCA_R69500_FINAL.pdf` (tabelas, faixa laranja do total, "Instruções ao contador").
+  PDF de **texto** (Helvetica, selecionável) feito com `pdf-lib` em `src/lib/nf-contador.ts`; prévia em HTML com as
+  mesmas medidas em `components/folha-nf-contador.tsx`. Nome do arquivo: `Solicitacao_NF_<RAZAO>_R<centavos>.pdf`.
+  **Não mude o layout sem o usuário pedir: o contador está acostumado com ele.**
+- **Solicitação de boleto:** folha de 1024 px com a arte da marca (`components/documentos.tsx`) que vira JPG com
+  `html-to-image`. O usuário aprovou como está.
+- Textos fixos (slogan, e-mail do financeiro breakfastpix@gmail.com) ficam em `src/lib/empresa.ts`.
 
 ## Identidade visual
 

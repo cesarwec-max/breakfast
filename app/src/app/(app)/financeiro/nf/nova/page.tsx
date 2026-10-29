@@ -22,7 +22,7 @@ export default async function NovaNF({ searchParams }: { searchParams: Promise<{
     <>
       <Titulo
         titulo="Solicitar nota fiscal"
-        subtitulo="Os dados do cliente vêm do cadastro. Só falta colocar o pedido."
+        subtitulo="Sai em PDF no formato do contador. Os dados do cliente vêm do cadastro; só falta colocar o pedido."
         voltar={{ href: pedido ? `/pedidos/${pedido.id}` : "/financeiro", rotulo: "Voltar" }}
       />
       {pedido && <Aviso tom="destaque">Itens preenchidos a partir do pedido #{pedido.id}. Confira e ajuste se precisar.</Aviso>}
@@ -39,27 +39,12 @@ export default async function NovaNF({ searchParams }: { searchParams: Promise<{
           {pedido && <input type="hidden" name="pedido_id" value={pedido.id} />}
           <ClienteSelect clientes={clientes} inicial={clienteId} voltar="/financeiro/nf/nova" modo="fiscal" />
           <ItensEditor produtos={produtos} inicial={pedido?.itens} />
-          <div className="grid gap-4 sm:grid-cols-2">
-            <Campo rotulo="Vencimento (opcional)">
-              <input type="date" name="vencimento" className={cls.input} />
-            </Campo>
-            <Campo rotulo="Forma de pagamento">
-              <input name="pagamento" list="formas-pagamento" defaultValue="Boleto bancário" className={cls.input} />
-              <datalist id="formas-pagamento">
-                <option value="Boleto bancário" />
-                <option value="PIX" />
-                <option value="Transferência bancária" />
-                <option value="Dinheiro" />
-                <option value="Cartão" />
-              </datalist>
-            </Campo>
-          </div>
-          <Campo rotulo="Observações para a nota (opcional)">
+          <Campo rotulo="Instruções extras ao contador (opcional)" dica="Cada linha vira um item a mais em “Instruções ao contador”.">
             <textarea
               name="observacoes"
               rows={3}
               className={cls.input}
-              placeholder="Uma observação por linha. Ex.: nº do pedido do cliente"
+              placeholder="Ex.: Informar no campo de observações da nota o pedido de compra 4521"
             />
           </Campo>
           <Enviar pendente="Gerando…">Gerar solicitação (PDF)</Enviar>

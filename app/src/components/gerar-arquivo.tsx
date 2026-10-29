@@ -3,7 +3,9 @@
 import { useEffect, useRef, useState, useSyncExternalStore } from "react";
 import type { DadosBoleto, DadosNF } from "@/lib/dados";
 import { nomeArquivo } from "@/lib/empresa";
-import { FolhaBoleto, FolhaNF, LARGURA_FOLHA } from "./documentos";
+import { arquivoContador, gerarPdfContador } from "@/lib/nf-contador";
+import { FolhaBoleto, LARGURA_FOLHA } from "./documentos";
+import { FolhaNFContador, LARGURA_A4_PX } from "./folha-nf-contador";
 import { cls } from "./ui";
 
 type Props =
@@ -36,28 +38,15 @@ async function gerarJPG(folha: HTMLElement, nome: string) {
   return new File([bytes], nome, { type: "image/jpeg" });
 }
 
-async function gerarPDF(folha: HTMLElement, nome: string, titulo: string) {
-  const { PDFDocument } = await import("pdf-lib");
-  const imagem = await PDFDocument.create().then(async (pdf) => {
-    pdf.setTitle(titulo);
-    pdf.setAuthor("Breakfast");
-    const jpg = await pdf.embedJpg(await paraBytes(await fotografar(folha)));
-    // Página com a largura de uma A4 e a altura da folha
-    const largura = 595.28;
-    const altura = (largura * jpg.height) / jpg.width;
-    pdf.addPage([largura, altura]).drawImage(jpg, { x: 0, y: 0, width: largura, height: altura });
-    return pdf.save();
-  });
-  return new File([imagem as BlobPart], nome, { type: "application/pdf" });
-}
-
 /** Prévia + botões para enviar (WhatsApp no celular) ou baixar o arquivo. */
 export function GerarArquivo(props: Props) {
   const nf = props.tipo === "nf";
   const formato = nf ? "PDF" : "JPG";
   const mime = nf ? "application/pdf" : "image/jpeg";
   const titulo = nf ? `Solicitação de Nota Fiscal nº ${props.id}` : `Solicitação de Boleto nº ${props.id}`;
-  const arquivo = nomeArquivo(nf ? "Solicitacao-NF" : "Solicitacao-Boleto", props.id, props.dados.cliente.nome, nf ? "pdf" : "jpg");
+  const arquivo = props.tipo === "nf" ? arquivoContador(props.dados) : nomeArquivo("Solicitacao-Boleto", props.id, props.dados.cliente.nome, "jpg");
+  // NF: folha A4 do contador (PDF de texto). Boleto: folha de 1024 px com a arte da marca (JPG).
+  const larguraFolha = nf ? LARGURA_A4_PX : LARGURA_FOLHA;
 
   const caixa = useRef<HTMLDivElement>(null);
   const folha = useRef<HTMLDivElement>(null);
@@ -71,24 +60,28 @@ export function GerarArquivo(props: Props) {
     () => false,
   );
 
-  // A folha tem 1024 px; a prévia é reduzida para caber na tela.
+  // A prévia é reduzida para caber na tela.
   useEffect(() => {
     const c = caixa.current;
     const f = folha.current;
     if (!c || !f) return;
     const medir = () => {
-      const escala = Math.min(1, c.clientWidth / LARGURA_FOLHA);
+      const escala = Math.min(1, c.clientWidth / larguraFolha);
       setMedida({ escala, altura: f.offsetHeight * escala });
     };
     const obs = new ResizeObserver(medir);
     obs.observe(c);
     obs.observe(f);
     return () => obs.disconnect();
-  }, []);
+  }, [larguraFolha]);
 
   async function gerar() {
     if (!folha.current) throw new Error("sem folha");
-    return nf ? gerarPDF(folha.current, arquivo, titulo) : gerarJPG(folha.current, arquivo);
+    if (props.tipo === "nf") {
+      const bytes = await gerarPdfContador(props.dados, props.id);
+      return new File([bytes as BlobPart], arquivo, { type: "application/pdf" });
+    }
+    return gerarJPG(folha.current, arquivo);
   }
 
   async function baixar() {
@@ -140,10 +133,10 @@ export function GerarArquivo(props: Props) {
         className="overflow-hidden rounded-xl border border-line bg-white shadow-md"
         style={{ height: medida.altura || undefined, visibility: medida.escala ? "visible" : "hidden" }}
       >
-        <div style={{ width: LARGURA_FOLHA, transform: `scale(${medida.escala})`, transformOrigin: "top left" }}>
+        <div style={{ width: larguraFolha, transform: `scale(${medida.escala})`, transformOrigin: "top left" }}>
           <div ref={folha}>
             {props.tipo === "nf" ? (
-              <FolhaNF id={props.id} data={props.data} dados={props.dados} />
+              <FolhaNFContador dados={props.dados} />
             ) : (
               <FolhaBoleto id={props.id} data={props.data} dados={props.dados} />
             )}

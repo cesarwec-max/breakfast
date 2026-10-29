@@ -5,12 +5,6 @@ export const EMPRESA = {
   emailFinanceiro: "breakfastpix@gmail.com",
 };
 
-export const ORIENTACOES_NF = [
-  "Emitir a nota fiscal considerando os dados do cliente e os itens informados nesta solicitação.",
-  "Conferir CNPJ, Inscrição Estadual e endereço antes da emissão.",
-  `Após a emissão, enviar o arquivo XML e o DANFE para ${EMPRESA.emailFinanceiro}.`,
-];
-
 export function orientacoesBoleto(qtd: number) {
   return [
     qtd > 1

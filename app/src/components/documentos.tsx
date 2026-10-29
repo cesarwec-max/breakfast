@@ -4,8 +4,6 @@
 
 import {
   Award,
-  Barcode,
-  CalendarDays,
   FileText,
   Handshake,
   Mail,
@@ -17,9 +15,9 @@ import {
   Truck,
   User,
 } from "lucide-react";
-import type { Cliente, DadosBoleto, DadosNF } from "@/lib/dados";
-import { EMPRESA, ORIENTACOES_NF, orientacoesBoleto } from "@/lib/empresa";
-import { brl, dataBR, qtd } from "@/lib/formato";
+import type { Cliente, DadosBoleto } from "@/lib/dados";
+import { EMPRESA, orientacoesBoleto } from "@/lib/empresa";
+import { brl, dataBR } from "@/lib/formato";
 
 export const LARGURA_FOLHA = 1024;
 
@@ -241,89 +239,6 @@ function Rodape() {
 }
 
 // ---------- Documentos ----------
-
-export function FolhaNF({ id, data, dados }: { id: number; data: string; dados: DadosNF }) {
-  const temCondicoes = !!(dados.vencimento || dados.pagamento);
-  const orientacoes = [...ORIENTACOES_NF, ...dados.observacoes.split("\n").map((l) => l.trim()).filter(Boolean)];
-  return (
-    <div className="bg-white font-sans text-[#1c1c1e]" style={{ width: LARGURA_FOLHA }}>
-      <Cabecalho
-        linha1="Solicitação de"
-        linha2="Nota Fiscal"
-        texto="Solicitamos a emissão da nota fiscal conforme os dados abaixo. Agradecemos!"
-        numero={id}
-        data={dataBR(data)}
-      />
-      <div className="space-y-10 px-7 pt-9">
-        <DadosCliente cliente={dados.cliente} />
-
-        <Secao numero={2} titulo="Dados do pedido">
-          <table className="w-full border-collapse font-condensada">
-            <thead>
-              <tr className="bg-[#1c1c1e] text-[18px] uppercase text-white">
-                <th className="rounded-l-[8px] px-4 py-3 text-left font-normal">Produto</th>
-                <th className="px-2 py-3 font-normal">Quantidade</th>
-                <th className="px-2 py-3 font-normal">Valor unitário</th>
-                <th className="rounded-r-[8px] px-4 py-3 text-right font-normal">Valor total</th>
-              </tr>
-            </thead>
-            <tbody>
-              {dados.itens.map((i, n) => (
-                <tr key={n} className="border-b border-[#ececef]">
-                  <td className="px-4 py-4">
-                    <div className="text-[25px] font-medium uppercase leading-tight">{i.descricao}</div>
-                    {i.sabor && <div className="text-[20px] font-normal text-[#ea4316]">Sabor {i.sabor}</div>}
-                  </td>
-                  <td className="px-2 py-4 text-center">
-                    <span className="text-[30px] font-medium">{qtd(i.quantidade)}</span>
-                    {i.unidade !== "un" && <span className="ml-1 text-[16px] text-[#6b6b70]">{i.unidade}</span>}
-                  </td>
-                  <td className="px-2 py-4 text-center text-[27px] font-medium">{brl(i.preco_unitario)}</td>
-                  <td className="px-4 py-4 text-right text-[28px] font-semibold text-[#ea4316]">{brl(i.quantidade * i.preco_unitario)}</td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-          <Total rotulo="Total do pedido" valor={dados.total} />
-        </Secao>
-
-        <div className={temCondicoes ? "grid grid-cols-[0.95fr_1.05fr] gap-5" : ""}>
-          {temCondicoes && (
-            <Secao numero={3} titulo="Condições de pagamento">
-              {dados.vencimento && (
-                <div className="flex items-center gap-5 border-b border-[#ececef] py-3">
-                  <IconeRedondo>
-                    <CalendarDays size={26} strokeWidth={1.8} />
-                  </IconeRedondo>
-                  <div className="font-condensada">
-                    <div className="text-[18px] font-medium uppercase text-[#1c1c1e]">Vencimento:</div>
-                    <div className="text-[40px] font-medium leading-none" style={textoGradiente}>
-                      {dataBR(dados.vencimento)}
-                    </div>
-                  </div>
-                </div>
-              )}
-              {dados.pagamento && (
-                <div className="flex items-center gap-5 py-3">
-                  <IconeRedondo>
-                    <Barcode size={26} strokeWidth={1.8} />
-                  </IconeRedondo>
-                  <div className="font-condensada">
-                    <div className="text-[18px] font-medium uppercase text-[#1c1c1e]">Pagamento:</div>
-                    <div className="text-[26px] font-normal text-[#2d4f8f]">{dados.pagamento}</div>
-                  </div>
-                </div>
-              )}
-            </Secao>
-          )}
-          <Orientacoes numero={temCondicoes ? 4 : 3} itens={orientacoes} />
-        </div>
-        <Contato />
-      </div>
-      <Rodape />
-    </div>
-  );
-}
 
 export function FolhaBoleto({ id, data, dados }: { id: number; data: string; dados: DadosBoleto }) {
   const n = dados.parcelas.length;
