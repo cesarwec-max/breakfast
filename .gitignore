@@ -7,3 +7,6 @@ __pycache__/
 dist/
 build/
 .DS_Store
+.next/
+*.tsbuildinfo
+next-env.d.ts

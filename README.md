@@ -1,6 +1,18 @@
 # breakfast
 
-Ambiente de desenvolvimento web com Docker (Node.js 22 + Python 3 + PostgreSQL 17).
+App de gestão da Breakfast (distribuidora de salgados): pedidos, estoque, financeiro
+(solicitações de nota fiscal em PDF e de boleto em JPG), contas a receber e contas a pagar.
+
+Ambiente de desenvolvimento com Docker (Node.js 22 + Python 3 + PostgreSQL 17).
+
+## Ligar o app
+
+```bash
+docker compose exec -d app bash -c 'cd /workspace/app && npm run build && npm run start > /tmp/next.log 2>&1'
+```
+
+Abra http://localhost:3001. A senha fica em `app/.env.local` (`APP_SENHA`).
+No celular, na mesma rede Wi-Fi: `http://<IP deste computador>:3001`.
 
 ## Uso diário
 

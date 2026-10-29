@@ -1,0 +1,66 @@
+@import "tailwindcss";
+
+/* Identidade Breakfast: grafite + laranja (degradê do símbolo), fundo cinza bem claro. */
+:root {
+  --background: #f3f3f4;
+  --surface: #ffffff;
+  --foreground: #2b2b2e;
+  --muted: #6b6b70;
+  --line: #e2e2e5;
+  --grafite: #3c3c3f;
+  --grafite-escuro: #232325;
+  --accent: #ee5f12;
+  --accent-soft: #fff1e7;
+  --laranja-claro: #f7941d;
+  --laranja-escuro: #ea4316;
+  --ok: #15803d;
+  --ok-soft: #e8f6ec;
+  --warn: #a16207;
+  --warn-soft: #fdf6dd;
+  --danger: #c81e1e;
+  --danger-soft: #fdecec;
+}
+
+@theme inline {
+  --color-background: var(--background);
+  --color-surface: var(--surface);
+  --color-foreground: var(--foreground);
+  --color-muted: var(--muted);
+  --color-line: var(--line);
+  --color-grafite: var(--grafite);
+  --color-grafite-escuro: var(--grafite-escuro);
+  --color-accent: var(--accent);
+  --color-accent-soft: var(--accent-soft);
+  --color-laranja-claro: var(--laranja-claro);
+  --color-laranja-escuro: var(--laranja-escuro);
+  --color-ok: var(--ok);
+  --color-ok-soft: var(--ok-soft);
+  --color-warn: var(--warn);
+  --color-warn-soft: var(--warn-soft);
+  --color-danger: var(--danger);
+  --color-danger-soft: var(--danger-soft);
+  --font-sans: var(--font-poppins), ui-sans-serif, system-ui, sans-serif;
+  --font-condensada: var(--font-oswald), "Arial Narrow", sans-serif;
+}
+
+body {
+  background: var(--background);
+  color: var(--foreground);
+  font-family: var(--font-sans);
+  -webkit-tap-highlight-color: transparent;
+}
+
+.tabular {
+  font-variant-numeric: tabular-nums;
+}
+
+/* Degradê laranja da marca */
+.bg-marca {
+  background-image: linear-gradient(135deg, var(--laranja-claro), var(--laranja-escuro));
+}
+.texto-marca {
+  background-image: linear-gradient(135deg, var(--laranja-claro), var(--laranja-escuro));
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+}
