@@ -1,0 +1,39 @@
+# Portas do lado do computador deslocadas (+1) para não conflitar com o projeto "teologia".
+services:
+  app:
+    restart: unless-stopped   # sobe sozinho quando o computador liga
+    build:
+      context: .
+      dockerfile: Dockerfile.dev
+    volumes:
+      - .:/workspace
+      - node_modules:/workspace/app/node_modules
+    ports:
+      - "3001:3000"   # React/Next/Express
+      - "5174:5173"   # Vite
+      - "8001:8000"   # Python (FastAPI/Django)
+    environment:
+      DATABASE_URL: postgres://breakfast:breakfast@db:5432/breakfast
+    depends_on:
+      db:
+        condition: service_healthy
+
+  db:
+    image: postgres:17
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: breakfast
+      POSTGRES_PASSWORD: breakfast
+      POSTGRES_DB: breakfast
+    ports:
+      - "5433:5432"
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -h localhost -U breakfast -d breakfast"]
+      interval: 5s
+      retries: 10
+
+volumes:
+  pgdata:
+  node_modules:
