@@ -6,8 +6,12 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
       python3 python3-pip python3-venv \
     && rm -rf /var/lib/apt/lists/*
 
+# CLI da Vercel (publicação em produção)
+RUN npm install -g vercel@64.0.2
+
 # Cria node_modules como "node" para o volume nomeado herdar o dono certo
-RUN mkdir -p /workspace/app/node_modules && chown -R node:node /workspace
+RUN mkdir -p /workspace/app/node_modules && chown -R node:node /workspace \
+    && mkdir -p /home/node/.local/share/com.vercel.cli && chown -R node:node /home/node/.local
 
 # A imagem node já tem o usuário "node" com UID 1000 (o mesmo do seu usuário),
 # então os arquivos criados no contêiner ficam com você como dono.

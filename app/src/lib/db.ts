@@ -5,7 +5,10 @@ const global = globalThis as unknown as { _sql?: ReturnType<typeof criar> };
 
 function criar() {
   return postgres(process.env.DATABASE_URL!, {
-    max: 5,
+    // Na Vercel cada função usa poucas conexões; o Neon usa um "pooler" que não aceita prepared statements.
+    max: process.env.VERCEL ? 1 : 5,
+    idle_timeout: 20,
+    prepare: false,
     types: {
       // numeric → number (valores e quantidades)
       numero: {
