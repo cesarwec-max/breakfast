@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import Link from "next/link";
 import { exigirLogin } from "@/lib/auth";
 import { listarAnexos, listarContasReceber, totaisContas, type FiltroConta } from "@/lib/dados";
 import { anexosTela } from "@/lib/anexos";
@@ -43,7 +44,11 @@ export default async function Receber({ searchParams }: { searchParams: Promise<
 
   return (
     <>
-      <Titulo titulo="Contas a receber" subtitulo="Boletos dos clientes. Os gerados no Financeiro entram aqui sozinhos." />
+      <Titulo titulo="Contas a receber" subtitulo="Boletos dos clientes. Os gerados no Financeiro entram aqui sozinhos.">
+        <Link href="/receber/jpg" className={cls.botao2}>
+          🖼️ JPG de pendentes
+        </Link>
+      </Titulo>
       {sp.lancado && <Aviso tom="ok">{sp.lancado} boleto(s) lançado(s).</Aviso>}
 
       <ContasTopo tabela="contas_receber" totais={totais} feito={sp.feito} desfeito={sp.desfeito} voltar={voltar} />

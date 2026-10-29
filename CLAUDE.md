@@ -61,6 +61,9 @@ que uso comercial pede o plano Pro.
 - **JPG para a equipe** (`/pedidos/equipe`): folha "Solicitações de pedidos" no visual do modelo do usuário
   (vermelho/preto), com os pedidos a entregar (pendentes e em rota), semana e observações gerais editáveis
   (`components/folha-pedidos.tsx` + `components/equipe-jpg.tsx`). Usa a foto do produto, se houver.
+- **JPG de pendentes de pagamento** (`/receber/jpg`): boletos em aberto com selo Atrasado/Pendente e total geral,
+  no visual do modelo do usuário (laranja/grafite) — `components/folha-receber.tsx` + `receber-jpg.tsx`.
+  Prévia + botões de JPG ficam em `components/folha-jpg.tsx` (usado também pelo JPG da equipe).
 - **Status dos pedidos:** pendente → em rota (saiu para entrega) → entregue; ou cancelado.
   **Estoque:** `ajustarEstoque()` em `pedidos/actions.ts` deixa os itens descontados enquanto o pedido não está
   cancelado e registra só a diferença com o motivo ("Pedido #5 lançado/editado/cancelado/reaberto/excluído").
