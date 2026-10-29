@@ -2,13 +2,14 @@ import type { Metadata } from "next";
 import { exigirLogin } from "@/lib/auth";
 import { listarAnexos, listarContasReceber, totaisContas, type FiltroConta } from "@/lib/dados";
 import { anexosTela } from "@/lib/anexos";
-import { brl, hoje, somarDias } from "@/lib/formato";
+import { hoje, somarDias } from "@/lib/formato";
 import { opcoesFormulario } from "@/lib/opcoes";
 import { Enviar } from "@/components/botoes";
 import { ClienteSelect } from "@/components/cliente-select";
+import { ContasTopo, SomaLista } from "@/components/contas-topo";
 import { ListaContas } from "@/components/lista-contas";
 import { ParcelasEditor } from "@/components/parcelas-editor";
-import { Abas, Aviso, Campo, Cartao, Numero, Secao, Titulo, cls } from "@/components/ui";
+import { Abas, Aviso, Campo, Cartao, Secao, Titulo, cls } from "@/components/ui";
 import { lancarReceber } from "../contas-actions";
 
 export const metadata: Metadata = { title: "Contas a receber" };
@@ -20,7 +21,7 @@ const FILTROS: { valor: FiltroConta; rotulo: string }[] = [
   { valor: "todos", rotulo: "Todos" },
 ];
 
-export default async function Receber({ searchParams }: { searchParams: Promise<{ filtro?: string; lancado?: string }> }) {
+export default async function Receber({ searchParams }: { searchParams: Promise<{ filtro?: string; lancado?: string; feito?: string; desfeito?: string }> }) {
   await exigirLogin();
   const sp = await searchParams;
   const filtro = FILTROS.find((f) => f.valor === sp.filtro)?.valor ?? "abertos";
@@ -45,20 +46,11 @@ export default async function Receber({ searchParams }: { searchParams: Promise<
       <Titulo titulo="Contas a receber" subtitulo="Boletos dos clientes. Os gerados no Financeiro entram aqui sozinhos." />
       {sp.lancado && <Aviso tom="ok">{sp.lancado} boleto(s) lançado(s).</Aviso>}
 
-      <div className="grid gap-3 sm:grid-cols-3">
-        <Numero rotulo="Total previsto para receber" valor={brl(totais.aberto)} detalhe={`${totais.qtd_aberto} boleto(s) em aberto`} tom="destaque" />
-        <Numero
-          rotulo="Vencidos"
-          valor={brl(totais.vencido)}
-          detalhe={`${totais.qtd_vencido} boleto(s)`}
-          tom={totais.vencido > 0 ? "perigo" : "neutro"}
-          href="/receber?filtro=vencidos"
-        />
-        <Numero rotulo="Vencem nos próximos 7 dias" valor={brl(totais.proximos7)} />
-      </div>
+      <ContasTopo tabela="contas_receber" totais={totais} feito={sp.feito} desfeito={sp.desfeito} voltar={voltar} />
 
       <Secao titulo="Boletos">
         <Abas atual={filtro} itens={FILTROS.map((f) => ({ ...f, href: `/receber?filtro=${f.valor}` }))} />
+        {filtro === "pagos" && <SomaLista contas={contas} rotulo="recebido(s)" />}
         <ListaContas
           tabela="contas_receber"
           voltar={voltar}

@@ -275,7 +275,16 @@ export async function listarContasPagar(filtro: FiltroConta, hoje: string) {
     LIMIT 500`;
 }
 
-export type Totais = { aberto: number; vencido: number; proximos7: number; qtd_aberto: number; qtd_vencido: number };
+export type Totais = {
+  aberto: number;
+  vencido: number;
+  proximos7: number;
+  qtd_aberto: number;
+  qtd_vencido: number;
+  /** Pago/recebido no mês atual */
+  pago_mes: number;
+  qtd_pago_mes: number;
+};
 
 export async function totaisContas(tabela: "contas_receber" | "contas_pagar", hoje: string, ate7: string) {
   const [t] = await sql<Totais[]>`
@@ -284,9 +293,22 @@ export async function totaisContas(tabela: "contas_receber" | "contas_pagar", ho
       COALESCE(SUM(valor) FILTER (WHERE pago_em IS NULL AND vencimento < ${hoje}), 0)::numeric AS vencido,
       COALESCE(SUM(valor) FILTER (WHERE pago_em IS NULL AND vencimento BETWEEN ${hoje} AND ${ate7}), 0)::numeric AS proximos7,
       COUNT(*) FILTER (WHERE pago_em IS NULL)::int AS qtd_aberto,
-      COUNT(*) FILTER (WHERE pago_em IS NULL AND vencimento < ${hoje})::int AS qtd_vencido
+      COUNT(*) FILTER (WHERE pago_em IS NULL AND vencimento < ${hoje})::int AS qtd_vencido,
+      COALESCE(SUM(valor) FILTER (WHERE pago_em >= ${hoje.slice(0, 8) + "01"}), 0)::numeric AS pago_mes,
+      COUNT(*) FILTER (WHERE pago_em >= ${hoje.slice(0, 8) + "01"})::int AS qtd_pago_mes
     FROM ${sql(tabela)}`;
   return t;
+}
+
+/** Nome (cliente ou fornecedor) e valor de um boleto, para o aviso "marcado como pago". */
+export async function resumoConta(tabela: "contas_receber" | "contas_pagar", id: number) {
+  const [c] =
+    tabela === "contas_receber"
+      ? await sql<{ nome: string; valor: number; pago_em: string | null }[]>`
+          SELECT c.nome, r.valor, r.pago_em FROM contas_receber r JOIN clientes c ON c.id = r.cliente_id WHERE r.id = ${id}`
+      : await sql<{ nome: string; valor: number; pago_em: string | null }[]>`
+          SELECT fornecedor AS nome, valor, pago_em FROM contas_pagar WHERE id = ${id}`;
+  return c ?? null;
 }
 
 // ---------- Anexos (notas e boletos emitidos) ----------

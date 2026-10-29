@@ -77,7 +77,7 @@ export function ListaContas({
             {c.pago_em ? (
               <form action={desfazerPago.bind(null, tabela, c.id, voltar)}>
                 <Enviar className={cls.botaoPequeno} pendente="…">
-                  Desfazer pagamento
+                  ↩ Voltar para em aberto
                 </Enviar>
               </form>
             ) : (

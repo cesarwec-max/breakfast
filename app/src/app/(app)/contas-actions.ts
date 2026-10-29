@@ -14,8 +14,12 @@ function validar(t: Tabela) {
 }
 const caminho = (t: Tabela) => (t === "contas_receber" ? "/receber" : "/pagar");
 
-function voltarPara(t: Tabela, voltar?: string) {
-  return voltar && voltar.startsWith(caminho(t)) ? voltar : caminho(t);
+function voltarPara(t: Tabela, voltar?: string, aviso?: Record<string, string>) {
+  const base = voltar && voltar.startsWith(caminho(t)) ? voltar : caminho(t);
+  const url = new URL(base, "http://x");
+  for (const k of ["feito", "desfeito", "lancado"]) url.searchParams.delete(k);
+  for (const [k, v] of Object.entries(aviso ?? {})) url.searchParams.set(k, v);
+  return url.pathname + url.search;
 }
 
 export async function marcarPago(tabela: Tabela, id: number, voltar?: string) {
@@ -23,7 +27,7 @@ export async function marcarPago(tabela: Tabela, id: number, voltar?: string) {
   validar(tabela);
   await sql`UPDATE ${sql(tabela)} SET pago_em = ${hoje()} WHERE id = ${id} AND pago_em IS NULL`;
   revalidatePath("/", "layout");
-  redirect(voltarPara(tabela, voltar));
+  redirect(voltarPara(tabela, voltar, { feito: String(id) }));
 }
 
 export async function desfazerPago(tabela: Tabela, id: number, voltar?: string) {
@@ -31,7 +35,7 @@ export async function desfazerPago(tabela: Tabela, id: number, voltar?: string) 
   validar(tabela);
   await sql`UPDATE ${sql(tabela)} SET pago_em = NULL WHERE id = ${id}`;
   revalidatePath("/", "layout");
-  redirect(voltarPara(tabela, voltar));
+  redirect(voltarPara(tabela, voltar, { desfeito: String(id) }));
 }
 
 export async function excluirConta(tabela: Tabela, id: number, voltar?: string) {
