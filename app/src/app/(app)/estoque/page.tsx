@@ -1,7 +1,7 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { exigirLogin } from "@/lib/auth";
-import { listarMovimentos, listarPedidos, listarProdutos } from "@/lib/dados";
+import { listarMovimentos, listarPedidos, listarProdutos, acabando } from "@/lib/dados";
 import { brl, qtd } from "@/lib/formato";
 import { Enviar } from "@/components/botoes";
 import { MovimentoForm } from "@/components/movimento-form";
@@ -24,9 +24,15 @@ export default async function Estoque({ searchParams }: { searchParams: Promise<
   const reservado = new Map<number, number>();
   for (const p of pendentes) for (const i of p.itens) reservado.set(i.produto_id, (reservado.get(i.produto_id) ?? 0) + i.quantidade);
 
+  const baixos = produtos.filter(acabando).length;
+
   return (
     <>
-      <Titulo titulo="Estoque" subtitulo="Saldo atual de cada produto. Cada pedido lançado já desconta os itens; cancelar devolve." />
+      <Titulo titulo="Estoque" subtitulo="Saldo atual de cada produto. Cada pedido lançado já desconta os itens; cancelar devolve.">
+        <Link href="/estoque/compra" className={cls.botao2}>
+          🛒 Lista de compra{baixos ? ` (${baixos})` : ""}
+        </Link>
+      </Titulo>
       {salvo && <Aviso tom="ok">Produto cadastrado.</Aviso>}
 
       {produtos.length === 0 ? (
@@ -59,8 +65,9 @@ export default async function Estoque({ searchParams }: { searchParams: Promise<
                         </div>
                       )}
                     </td>
-                    <td className={`tabular px-4 py-3 text-right font-semibold ${p.saldo <= 0 ? "text-danger" : ""}`}>
+                    <td className={`tabular px-4 py-3 text-right font-semibold ${p.saldo <= 0 ? "text-danger" : acabando(p) ? "text-warn" : ""}`}>
                       {qtd(p.saldo)} <span className="font-normal text-muted">{p.unidade}</span>
+                      {acabando(p) && p.saldo > 0 && <div className="text-xs font-normal">acabando (mín. {qtd(p.estoque_minimo)})</div>}
                     </td>
                     <td className={`tabular hidden px-4 py-3 text-right sm:table-cell ${falta ? "font-semibold text-danger" : "text-muted"}`}>
                       {res ? qtd(res) : "—"}
@@ -95,6 +102,9 @@ export default async function Estoque({ searchParams }: { searchParams: Promise<
             </Campo>
             <Campo rotulo="Preço de venda (R$)">
               <input name="preco" inputMode="decimal" className={cls.input} placeholder="0,00" />
+            </Campo>
+            <Campo rotulo="Estoque mínimo" dica="Ao chegar nele, o produto aparece em “acabando” e na lista de compra." className="sm:col-span-2">
+              <input name="estoque_minimo" inputMode="decimal" className={cls.input} placeholder="0" />
             </Campo>
             <Campo rotulo="Estoque atual" className="sm:col-span-2">
               <input name="estoque_inicial" inputMode="decimal" className={cls.input} placeholder="0" />

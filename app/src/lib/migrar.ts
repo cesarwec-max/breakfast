@@ -135,6 +135,9 @@ ALTER TABLE pedidos ADD COLUMN IF NOT EXISTS vencimento_pagamento date;
 ALTER TABLE contas_receber ADD COLUMN IF NOT EXISTS pedido_id integer REFERENCES pedidos(id) ON DELETE SET NULL;
 CREATE INDEX IF NOT EXISTS contas_receber_pedido ON contas_receber (pedido_id);
 ALTER TABLE contas_receber ADD COLUMN IF NOT EXISTS automatica boolean NOT NULL DEFAULT false;
+
+-- Estoque mínimo: abaixo dele o produto entra em "acabando" e na lista de compra
+ALTER TABLE produtos ADD COLUMN IF NOT EXISTS estoque_minimo numeric(12,2) NOT NULL DEFAULT 0;
 `;
 
 export async function migrar() {

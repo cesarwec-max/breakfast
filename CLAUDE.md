@@ -57,6 +57,19 @@ que uso comercial pede o plano Pro.
 - Em **Contas a pagar** também há anexos (nota e boletos da fábrica): `anexos.conta_pagar_id`, sem cliente.
   Parcelas lançadas juntas ficam no mesmo `contas_pagar.lote` e mostram os mesmos anexos. Ao excluir uma parcela,
   os anexos passam para outra do mesmo lote; se era a única, são apagados junto (o aviso de confirmação diz isso).
+- **Compra da fábrica** (`components/compra-fabrica.tsx`, em Contas a pagar): nota fiscal + boletos (já vêm 2 linhas)
+  com o arquivo de cada boleto. Primeiro `lancarPagar` cria as parcelas e devolve os ids; depois o navegador envia
+  cada arquivo por `enviarAnexo` (um por vez, por causa do limite da Vercel). A nota vale para a compra (lote);
+  cada boleto fica na sua parcela. Parcela em aberto sem o seu boleto mostra "⚠ Falta anexar o boleto"
+  (`pagarSemBoleto()` em `dados.ts` usa a mesma regra no painel).
+- **Cobrar no WhatsApp** (`src/lib/cobranca.ts`): link `wa.me` com a mensagem pronta (valor, vencimento, PIX copia e
+  cola com o valor). Conta que veio de boleto ou pedido "Boleto" não manda PIX ("reenviamos o boleto"). Em Contas a
+  receber, no painel e na ficha do cliente (cobra tudo em aberto de uma vez). Sem telefone: abre o WhatsApp para
+  escolher o contato.
+- **Painel (tela inicial):** vendas de hoje/do mês (pedidos não cancelados pela data de lançamento, comparando com o
+  mês passado até o mesmo dia — `resumoVendas`), ticket médio, recebido no mês, para cobrar, mais vendidos, acabando.
+- **Estoque mínimo** (`produtos.estoque_minimo`): no mínimo ou abaixo = "acabando" (`acabando()` em `dados.ts`).
+  `/estoque/compra`: lista de compra com sugestão (dobro do mínimo − saldo) e texto para a fábrica no WhatsApp.
 - **Solicitação de NF (para o contador):** A4 simples, cópia fiel do modelo do usuário
   `Solicitacao_NF_SPORT_BAR_MOOCA_R69500_FINAL.pdf` (tabelas, faixa laranja do total, "Instruções ao contador").
   PDF de **texto** (Helvetica, selecionável) feito com `pdf-lib` em `src/lib/nf-contador.ts`; prévia em HTML com as

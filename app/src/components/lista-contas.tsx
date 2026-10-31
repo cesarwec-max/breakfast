@@ -16,6 +16,10 @@ export type LinhaConta = {
   pedido_id?: number | null;
   /** Notas e boletos anexados (em Contas a pagar: os da compra toda). */
   anexos?: AnexoTela[];
+  /** Alerta ao lado do vencimento (ex.: falta anexar o boleto). */
+  aviso?: string;
+  /** Link do WhatsApp com a cobrança pronta (Contas a receber). */
+  cobrar?: string;
 };
 
 export function SeloVencimento({ vencimento, pago_em }: { vencimento: string; pago_em: string | null }) {
@@ -71,6 +75,11 @@ export function ListaContas({
             <div className="text-right">
               <div className="tabular font-semibold">{brl(c.valor)}</div>
               <SeloVencimento vencimento={c.vencimento} pago_em={c.pago_em} />
+              {c.aviso && (
+                <div className="mt-1">
+                  <Selo tom="aviso">⚠ {c.aviso}</Selo>
+                </div>
+              )}
             </div>
           </div>
           <div className="mt-2 flex flex-wrap items-center gap-2">
@@ -86,6 +95,11 @@ export function ListaContas({
                   ✓ {rotuloPago}
                 </Enviar>
               </form>
+            )}
+            {c.cobrar && !c.pago_em && (
+              <a href={c.cobrar} target="_blank" rel="noreferrer" className={`${cls.botaoPequeno} border-[#25d366]/40 text-[#128c4a]`}>
+                💬 Cobrar no WhatsApp
+              </a>
             )}
             <details className="group">
               <summary className={`${cls.botaoPequeno} cursor-pointer list-none`}>Editar</summary>
@@ -103,7 +117,12 @@ export function ListaContas({
               <details className="group order-last open:w-full">
                 <summary className={`${cls.botaoPequeno} cursor-pointer list-none`}>📎 Anexar nota/boleto</summary>
                 <div className="mt-2">
-                  <Anexos anexos={[]} vazio="" alvo={tabela === "contas_receber" ? { contaId: c.id } : { contaPagarId: c.id }} />
+                  <Anexos
+                    anexos={[]}
+                    vazio=""
+                    alvo={tabela === "contas_receber" ? { contaId: c.id } : { contaPagarId: c.id }}
+                    tipoInicial={c.aviso || c.anexos?.some((a) => a.tipo === "nf") ? "boleto" : undefined}
+                  />
                 </div>
               </details>
             )}

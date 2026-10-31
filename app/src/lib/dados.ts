@@ -69,11 +69,15 @@ export type Produto = {
   ativo: boolean;
   saldo: number;
   tem_foto: boolean;
+  estoque_minimo: number;
 };
+
+/** Sem saldo, ou no mínimo/abaixo dele (quando há mínimo definido). */
+export const acabando = (p: Pick<Produto, "saldo" | "estoque_minimo">) => p.saldo <= 0 || (p.estoque_minimo > 0 && p.saldo <= p.estoque_minimo);
 
 export async function listarProdutos({ incluirInativos = false } = {}) {
   return sql<Produto[]>`
-    SELECT p.id, p.nome, p.sabor, p.unidade, p.preco, p.ativo, p.criado_em, (p.foto IS NOT NULL) AS tem_foto,
+    SELECT p.id, p.nome, p.sabor, p.unidade, p.preco, p.ativo, p.estoque_minimo, p.criado_em, (p.foto IS NOT NULL) AS tem_foto,
       COALESCE(SUM(CASE WHEN m.tipo = 'saida' THEN -m.quantidade ELSE m.quantidade END), 0)::numeric AS saldo
     FROM produtos p
     LEFT JOIN estoque_movimentos m ON m.produto_id = p.id
@@ -84,7 +88,7 @@ export async function listarProdutos({ incluirInativos = false } = {}) {
 
 export async function obterProduto(id: number) {
   const [p] = await sql<Produto[]>`
-    SELECT p.id, p.nome, p.sabor, p.unidade, p.preco, p.ativo, p.criado_em, (p.foto IS NOT NULL) AS tem_foto,
+    SELECT p.id, p.nome, p.sabor, p.unidade, p.preco, p.ativo, p.estoque_minimo, p.criado_em, (p.foto IS NOT NULL) AS tem_foto,
       COALESCE(SUM(CASE WHEN m.tipo = 'saida' THEN -m.quantidade ELSE m.quantidade END), 0)::numeric AS saldo
     FROM produtos p
     LEFT JOIN estoque_movimentos m ON m.produto_id = p.id
@@ -245,6 +249,10 @@ export type ContaReceber = {
   vencimento: string;
   pago_em: string | null;
   pedido_id: number | null;
+  telefone: string;
+  cnpj_cpf: string;
+  /** Veio de boleto (Financeiro) ou o pedido é pago no boleto: a cobrança não manda PIX. */
+  boleto: boolean;
 };
 
 export type ContaPagar = {
@@ -256,6 +264,8 @@ export type ContaPagar = {
   valor: number;
   vencimento: string;
   pago_em: string | null;
+  /** Quantas parcelas tem a compra (o lote) inteira. */
+  parcelas_lote: number;
 };
 
 export type FiltroConta = "abertos" | "vencidos" | "pagos" | "todos";
@@ -270,10 +280,12 @@ function condicaoFiltro(filtro: FiltroConta, hoje: string) {
 export async function listarContasReceber(filtro: FiltroConta, hoje: string, clienteId?: number) {
   return sql<ContaReceber[]>`
     SELECT r.id, r.cliente_id, r.solicitacao_id, r.descricao, r.valor, r.vencimento, r.pago_em, r.criado_em,
-      c.nome AS cliente, COALESCE(r.pedido_id, s.pedido_id) AS pedido_id
+      c.nome AS cliente, c.telefone, c.cnpj_cpf, COALESCE(r.pedido_id, s.pedido_id) AS pedido_id,
+      (r.solicitacao_id IS NOT NULL OR COALESCE(pe.forma_pagamento, '') ILIKE '%boleto%') AS boleto
     FROM contas_receber r
     JOIN clientes c ON c.id = r.cliente_id
     LEFT JOIN solicitacoes s ON s.id = r.solicitacao_id
+    LEFT JOIN pedidos pe ON pe.id = COALESCE(r.pedido_id, s.pedido_id)
     WHERE ${condicaoFiltro(filtro, hoje)}
       AND ${clienteId ? sql`r.cliente_id = ${clienteId}` : sql`true`}
     ORDER BY ${filtro === "pagos" ? sql`r.pago_em DESC, r.vencimento DESC` : sql`r.vencimento ASC, r.id ASC`}
@@ -282,7 +294,9 @@ export async function listarContasReceber(filtro: FiltroConta, hoje: string, cli
 
 export async function listarContasPagar(filtro: FiltroConta, hoje: string) {
   return sql<ContaPagar[]>`
-    SELECT *, COALESCE(lote, id) AS lote FROM contas_pagar
+    SELECT cp.*, COALESCE(cp.lote, cp.id) AS lote,
+      (SELECT count(*)::int FROM contas_pagar o WHERE COALESCE(o.lote, o.id) = COALESCE(cp.lote, cp.id)) AS parcelas_lote
+    FROM contas_pagar cp
     WHERE ${condicaoFiltro(filtro, hoje)}
     ORDER BY ${filtro === "pagos" ? sql`pago_em DESC, vencimento DESC` : sql`vencimento ASC, id ASC`}
     LIMIT 500`;
@@ -385,4 +399,59 @@ export async function contasDoPedido(pedidoId: number) {
     FROM contas_receber r LEFT JOIN solicitacoes s ON s.id = r.solicitacao_id
     WHERE r.pedido_id = ${pedidoId} OR s.pedido_id = ${pedidoId}
     ORDER BY r.vencimento, r.id`;
+}
+
+// ---------- Painel (vendas) ----------
+
+export type ResumoVendas = {
+  hoje: number;
+  qtd_hoje: number;
+  mes: number;
+  qtd_mes: number;
+  /** Mês passado até o mesmo dia, para comparar */
+  mes_passado: number;
+  mais_vendidos: { produto: string; sabor: string; unidade: string; quantidade: number; total: number }[];
+};
+
+/** Vendas pelos pedidos lançados (cancelados não contam), no horário de São Paulo. */
+export async function resumoVendas(hoje: string): Promise<ResumoVendas> {
+  const inicioMes = hoje.slice(0, 8) + "01";
+  const [a, m] = hoje.split("-").map(Number);
+  const anterior = m === 1 ? `${a - 1}-12` : `${a}-${String(m - 1).padStart(2, "0")}`;
+  const inicioAnterior = `${anterior}-01`;
+  // Mesmo dia do mês passado (ou o último dia, se o mês passado for mais curto)
+  const ultimoAnterior = new Date(Date.UTC(Number(anterior.slice(0, 4)), Number(anterior.slice(5, 7)), 0)).getUTCDate();
+  const fimAnterior = `${anterior}-${String(Math.min(Number(hoje.slice(8, 10)), ultimoAnterior)).padStart(2, "0")}`;
+  const dia = sql`(pe.criado_em AT TIME ZONE 'America/Sao_Paulo')::date`;
+  const [t] = await sql<Omit<ResumoVendas, "mais_vendidos">[]>`
+    WITH v AS (
+      SELECT ${dia} AS dia, COALESCE((SELECT SUM(i.quantidade * i.preco_unitario) FROM pedido_itens i WHERE i.pedido_id = pe.id), 0) AS total
+      FROM pedidos pe WHERE pe.status <> 'cancelado' AND ${dia} >= ${inicioAnterior}
+    )
+    SELECT
+      COALESCE(SUM(total) FILTER (WHERE dia = ${hoje}), 0)::numeric AS hoje,
+      COUNT(*) FILTER (WHERE dia = ${hoje})::int AS qtd_hoje,
+      COALESCE(SUM(total) FILTER (WHERE dia >= ${inicioMes}), 0)::numeric AS mes,
+      COUNT(*) FILTER (WHERE dia >= ${inicioMes})::int AS qtd_mes,
+      COALESCE(SUM(total) FILTER (WHERE dia BETWEEN ${inicioAnterior} AND ${fimAnterior}), 0)::numeric AS mes_passado
+    FROM v`;
+  const mais_vendidos = await sql<ResumoVendas["mais_vendidos"]>`
+    SELECT pr.nome AS produto, pr.sabor, pr.unidade, SUM(i.quantidade)::numeric AS quantidade,
+      SUM(i.quantidade * i.preco_unitario)::numeric AS total
+    FROM pedido_itens i JOIN pedidos pe ON pe.id = i.pedido_id JOIN produtos pr ON pr.id = i.produto_id
+    WHERE pe.status <> 'cancelado' AND ${dia} >= ${inicioMes}
+    GROUP BY pr.id ORDER BY quantidade DESC LIMIT 5`;
+  return { ...t, mais_vendidos };
+}
+
+/** Boletos a pagar em aberto sem o arquivo do boleto (mesma regra da tela Contas a pagar). */
+export async function pagarSemBoleto() {
+  const linhas = await sql<{ id: number }[]>`
+    SELECT cp.id FROM contas_pagar cp
+    WHERE cp.pago_em IS NULL
+      AND NOT EXISTS (SELECT 1 FROM anexos a WHERE a.conta_pagar_id = cp.id AND a.tipo = 'boleto')
+      AND (SELECT count(*) FROM anexos a JOIN contas_pagar o ON o.id = a.conta_pagar_id
+           WHERE a.tipo = 'boleto' AND COALESCE(o.lote, o.id) = COALESCE(cp.lote, cp.id))
+        < (SELECT count(*) FROM contas_pagar o WHERE COALESCE(o.lote, o.id) = COALESCE(cp.lote, cp.id))`;
+  return new Set(linhas.map((l) => l.id));
 }

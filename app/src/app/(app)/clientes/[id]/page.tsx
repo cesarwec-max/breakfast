@@ -4,6 +4,8 @@ import { notFound } from "next/navigation";
 import { exigirLogin } from "@/lib/auth";
 import { listarAnexos, listarContasReceber, listarPedidos, obterCliente } from "@/lib/dados";
 import { anexosTela } from "@/lib/anexos";
+import { linkCobranca } from "@/lib/cobranca";
+import { SeloVencimento } from "@/components/lista-contas";
 import { Anexos } from "@/components/anexos";
 import { brl, dataBR, hoje } from "@/lib/formato";
 import { ClienteForm } from "@/components/cliente-form";
@@ -26,9 +28,10 @@ export default async function ClientePagina({
   const cliente = Number.isInteger(id) ? await obterCliente(id) : null;
   if (!cliente) notFound();
 
+  const dia = hoje();
   const [pedidos, contas, anexosBrutos] = await Promise.all([
     listarPedidos({ clienteId: id, limite: 10 }),
-    listarContasReceber("abertos", hoje(), id),
+    listarContasReceber("abertos", dia, id),
     listarAnexos({ clienteId: id }),
   ]);
   const anexos = anexosTela(anexosBrutos);
@@ -83,14 +86,25 @@ export default async function ClientePagina({
         )}
       </Secao>
 
-      <Secao titulo={`Contas a receber em aberto: ${brl(emAberto)}`}>
+      <Secao
+        titulo={`Contas a receber em aberto: ${brl(emAberto)}`}
+        acao={
+          contas.length > 0 && (
+            <a href={linkCobranca({ ...cliente, cliente: cliente.nome }, contas, dia)} target="_blank" rel="noreferrer" className={cls.botaoPequeno}>
+              💬 Cobrar {contas.length > 1 ? "tudo " : ""}no WhatsApp
+            </a>
+          )
+        }
+      >
         {contas.length === 0 ? (
           <p className="text-sm text-muted">Nada em aberto.</p>
         ) : (
           <ul className="divide-y divide-line rounded-xl border border-line bg-surface text-sm">
             {contas.map((c) => (
               <li key={c.id} className="flex justify-between px-4 py-2.5">
-                <span>Vence {dataBR(c.vencimento)}</span>
+                <span>
+                  Vence {dataBR(c.vencimento)} <SeloVencimento vencimento={c.vencimento} pago_em={null} />
+                </span>
                 <span className="tabular">{brl(c.valor)}</span>
               </li>
             ))}

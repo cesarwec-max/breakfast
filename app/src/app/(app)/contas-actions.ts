@@ -86,24 +86,34 @@ export async function lancarReceber(form: FormData) {
   redirect("/receber?lancado=" + parcelas.length);
 }
 
-export async function lancarPagar(form: FormData) {
+/**
+ * Lança as parcelas de uma compra (mesmo lote) e devolve os ids, na ordem dos boletos.
+ * Quem chama (components/compra-fabrica.tsx) anexa depois a nota e o arquivo de cada boleto.
+ */
+export async function lancarPagar(form: FormData): Promise<{ ids?: number[]; erro?: string }> {
   await exigirLogin();
   const fornecedor = String(form.get("fornecedor") ?? "").trim() || "Fábrica";
   const descricao = String(form.get("descricao") ?? "").trim();
-  const parcelas = lerParcelas(form);
-  await sql.begin(async (tx) => {
-    const ids = await tx<{ id: number }[]>`INSERT INTO contas_pagar ${tx(
-      parcelas.map((p, i) => ({
-        fornecedor,
-        descricao: [descricao, parcelas.length > 1 ? `parcela ${i + 1}/${parcelas.length}` : ""].filter(Boolean).join(" · "),
-        valor: p.valor,
-        vencimento: p.vencimento,
-      })),
-    )} RETURNING id`;
-    // As parcelas desta compra ficam no mesmo lote: a nota e os boletos anexados valem para todas.
-    const lote = Math.min(...ids.map((r) => r.id));
-    await tx`UPDATE contas_pagar SET lote = ${lote} WHERE id IN ${tx(ids.map((r) => r.id))}`;
+  let parcelas;
+  try {
+    parcelas = lerParcelas(form);
+  } catch (e) {
+    return { erro: (e as Error).message };
+  }
+  const ids = await sql.begin(async (tx) => {
+    const ids: number[] = [];
+    for (const [i, p] of parcelas.entries()) {
+      const [r] = await tx<{ id: number }[]>`
+        INSERT INTO contas_pagar (fornecedor, descricao, valor, vencimento)
+        VALUES (${fornecedor}, ${[descricao, parcelas.length > 1 ? `parcela ${i + 1}/${parcelas.length}` : ""].filter(Boolean).join(" · ")},
+                ${p.valor}, ${p.vencimento})
+        RETURNING id`;
+      ids.push(r.id);
+    }
+    // As parcelas desta compra ficam no mesmo lote: a nota vale para todas.
+    await tx`UPDATE contas_pagar SET lote = ${ids[0]} WHERE id IN ${tx(ids)}`;
+    return ids;
   });
   revalidatePath("/", "layout");
-  redirect("/pagar?lancado=" + parcelas.length);
+  return { ids };
 }

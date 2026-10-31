@@ -172,18 +172,21 @@ export function Anexos({
   vazio = "Nenhum documento anexado ainda.",
   compacto = false,
   podeAnexar = true,
+  tipoInicial,
 }: {
   anexos: AnexoTela[];
   alvo?: { pedidoId?: number; contaId?: number; contaPagarId?: number };
   vazio?: string;
   compacto?: boolean;
   podeAnexar?: boolean;
+  /** Tipo já escolhido no botão de anexar (senão: nota, ou boleto se a nota já está lá). */
+  tipoInicial?: string;
 }) {
   const temNF = anexos.some((a) => a.tipo === "nf");
   return (
     <div className="space-y-2">
       {anexos.length > 0 ? <Lista anexos={anexos} mostrarExcluir={podeAnexar} /> : !compacto && vazio && <p className="text-sm text-muted">{vazio}</p>}
-      {podeAnexar && alvo && <Enviar alvo={alvo} tipoInicial={temNF ? "boleto" : "nf"} compacto={compacto} />}
+      {podeAnexar && alvo && <Enviar alvo={alvo} tipoInicial={tipoInicial ?? (temNF ? "boleto" : "nf")} compacto={compacto} />}
     </div>
   );
 }

@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { brl, lerValor, somarDias, valorCampo } from "@/lib/formato";
+import { ACEITA_ARQUIVOS } from "@/lib/anexos";
 import { cls } from "./ui";
 
 type Linha = { chave: number; valor: string; vencimento: string };
@@ -9,8 +10,22 @@ let contador = 0;
 const nova = (valor = "", vencimento = ""): Linha => ({ chave: ++contador, valor, vencimento });
 
 /** Lista de boletos (valor + vencimento). Envia parcela_valor / parcela_vencimento. */
-export function ParcelasEditor({ totalSugerido, primeiroVencimento }: { totalSugerido?: number; primeiroVencimento: string }) {
-  const [linhas, setLinhas] = useState<Linha[]>(() => [nova(totalSugerido ? valorCampo(totalSugerido) : "", "")]);
+export function ParcelasEditor({
+  totalSugerido,
+  primeiroVencimento,
+  linhasIniciais = 1,
+  comBoleto = false,
+}: {
+  totalSugerido?: number;
+  primeiroVencimento: string;
+  /** Quantos boletos já aparecem vazios (a fábrica sempre manda 2). */
+  linhasIniciais?: number;
+  /** Mostra, em cada boleto, um campo para anexar o arquivo (envia parcela_boleto). */
+  comBoleto?: boolean;
+}) {
+  const [linhas, setLinhas] = useState<Linha[]>(() =>
+    totalSugerido ? [nova(valorCampo(totalSugerido), "")] : Array.from({ length: linhasIniciais }, () => nova()),
+  );
   const [dividir, setDividir] = useState({ total: totalSugerido ? valorCampo(totalSugerido) : "", n: "2", intervalo: "30", inicio: primeiroVencimento });
   const muda = (chave: number, campos: Partial<Linha>) => setLinhas((ls) => ls.map((l) => (l.chave === chave ? { ...l, ...campos } : l)));
   const total = linhas.reduce((s, l) => s + lerValor(l.valor), 0);
@@ -35,7 +50,8 @@ export function ParcelasEditor({ totalSugerido, primeiroVencimento }: { totalSug
       <span className="mb-1 block text-sm font-medium text-muted">Boletos (valor e vencimento) *</span>
       <div className="space-y-2">
         {linhas.map((l, i) => (
-          <div key={l.chave} className="grid grid-cols-[2rem_1fr_1fr_auto] items-center gap-2">
+          <div key={l.chave} className={comBoleto ? "rounded-lg border border-line p-2" : ""}>
+          <div className="grid grid-cols-[2rem_1fr_1fr_auto] items-center gap-2">
             <span className="text-center text-sm text-muted">{i + 1}.</span>
             <input
               name="parcela_valor"
@@ -64,6 +80,19 @@ export function ParcelasEditor({ totalSugerido, primeiroVencimento }: { totalSug
             >
               ✕
             </button>
+          </div>
+          {comBoleto && (
+            <label className="mt-2 flex items-center gap-2 pl-10 text-sm text-muted">
+              <span className="shrink-0">📎 Arquivo do boleto {i + 1}:</span>
+              <input
+                name="parcela_boleto"
+                type="file"
+                accept={ACEITA_ARQUIVOS}
+                className="min-w-0 flex-1 text-xs file:mr-2 file:rounded-md file:border file:border-line file:bg-surface file:px-2 file:py-1 file:text-xs file:font-semibold"
+                aria-label={`Arquivo do boleto ${i + 1}`}
+              />
+            </label>
+          )}
           </div>
         ))}
       </div>

@@ -1,8 +1,8 @@
 import type { Metadata } from "next";
 import { notFound } from "next/navigation";
 import { exigirLogin } from "@/lib/auth";
-import { listarMovimentos, obterProduto } from "@/lib/dados";
-import { qtd, valorCampo } from "@/lib/formato";
+import { listarMovimentos, obterProduto, acabando } from "@/lib/dados";
+import { qtd, qtdCampo, valorCampo } from "@/lib/formato";
 import { Confirmar, Enviar } from "@/components/botoes";
 import { FotoProduto } from "@/components/foto-produto";
 import { MovimentoForm } from "@/components/movimento-form";
@@ -34,7 +34,9 @@ export default async function ProdutoPagina({
 
       <div className="grid gap-6 lg:grid-cols-2">
         <div className="space-y-6">
-          <Numero rotulo="Saldo atual" valor={`${qtd(produto.saldo)} ${produto.unidade}`} tom={produto.saldo <= 0 ? "perigo" : "neutro"} />
+          <Numero rotulo="Saldo atual" valor={`${qtd(produto.saldo)} ${produto.unidade}`} tom={produto.saldo <= 0 ? "perigo" : acabando(produto) ? "aviso" : "neutro"}
+            detalhe={produto.estoque_minimo > 0 ? `mínimo: ${qtd(produto.estoque_minimo)} ${produto.unidade}` : "sem estoque mínimo definido"}
+          />
           <Cartao>
             <h2 className="mb-3 font-semibold">Lançar movimentação</h2>
             <MovimentoForm acao={lancarMovimento} produtos={[]} produtoFixo={id} voltar={voltar} />
@@ -57,6 +59,9 @@ export default async function ProdutoPagina({
             </Campo>
             <Campo rotulo="Preço de venda (R$)">
               <input name="preco" inputMode="decimal" defaultValue={valorCampo(produto.preco)} className={cls.input} />
+            </Campo>
+            <Campo rotulo="Estoque mínimo" dica="Ao chegar nele, o produto aparece em “acabando” e na lista de compra." className="sm:col-span-2">
+              <input name="estoque_minimo" inputMode="decimal" defaultValue={produto.estoque_minimo ? qtdCampo(produto.estoque_minimo) : ""} className={cls.input} placeholder="0" />
             </Campo>
             <label className="flex items-center gap-2 text-sm sm:col-span-2">
               <input type="checkbox" name="ativo" defaultChecked={produto.ativo} className="size-4 accent-accent" />

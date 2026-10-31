@@ -1,15 +1,13 @@
 import type { Metadata } from "next";
 import { exigirLogin } from "@/lib/auth";
 import { sql } from "@/lib/db";
+import { CompraFabrica } from "@/components/compra-fabrica";
 import { listarAnexosPagar, listarContasPagar, totaisContas, type FiltroConta } from "@/lib/dados";
 import { anexosTela } from "@/lib/anexos";
 import { hoje, somarDias } from "@/lib/formato";
-import { Enviar } from "@/components/botoes";
 import { ContasTopo, SomaLista } from "@/components/contas-topo";
 import { ListaContas } from "@/components/lista-contas";
-import { ParcelasEditor } from "@/components/parcelas-editor";
-import { Abas, Aviso, Campo, Cartao, Secao, Titulo, cls } from "@/components/ui";
-import { lancarPagar } from "../contas-actions";
+import { Abas, Aviso, Cartao, Secao, Titulo } from "@/components/ui";
 
 export const metadata: Metadata = { title: "Contas a pagar" };
 
@@ -20,7 +18,7 @@ const FILTROS: { valor: FiltroConta; rotulo: string }[] = [
   { valor: "todos", rotulo: "Todos" },
 ];
 
-export default async function Pagar({ searchParams }: { searchParams: Promise<{ filtro?: string; lancado?: string; feito?: string; desfeito?: string }> }) {
+export default async function Pagar({ searchParams }: { searchParams: Promise<{ filtro?: string; lancado?: string; anexos?: string; feito?: string; desfeito?: string }> }) {
   await exigirLogin();
   const sp = await searchParams;
   const filtro = FILTROS.find((f) => f.valor === sp.filtro)?.valor ?? "abertos";
@@ -31,10 +29,22 @@ export default async function Pagar({ searchParams }: { searchParams: Promise<{ 
     sql<{ fornecedor: string }[]>`SELECT DISTINCT fornecedor FROM contas_pagar ORDER BY fornecedor`,
   ]);
   const voltar = `/pagar?filtro=${filtro}`;
-  // Nota e boletos da fábrica: valem para todas as parcelas da mesma compra (lote)
+  // A nota vale para a compra inteira (lote); cada boleto fica preso à sua parcela.
   const brutos = await listarAnexosPagar([...new Set(contas.map((c) => c.lote))]);
   const telas = anexosTela(brutos);
-  const anexosDoLote = (lote: number) => telas.filter((_, i) => brutos[i].lote === lote);
+  const linha = (c: (typeof contas)[number]) => {
+    const doLote = telas.map((t, i) => ({ t, b: brutos[i] })).filter((x) => x.b.lote === c.lote);
+    const meus = doLote.filter((x) => x.b.tipo === "boleto" && x.b.conta_pagar_id === c.id);
+    const boletosLote = doLote.filter((x) => x.b.tipo === "boleto").length;
+    // Falta o boleto se esta parcela não tem o seu e a compra tem menos boletos que parcelas
+    const faltaBoleto = !c.pago_em && meus.length === 0 && boletosLote < c.parcelas_lote;
+    // Mostra o boleto desta parcela + nota e outros da compra. Os boletos das outras parcelas só aparecem
+    // em compras antigas, em que todos os boletos foram anexados juntos numa parcela só.
+    const juntos = meus.length === 0 && boletosLote >= c.parcelas_lote;
+    const ordem = [...meus, ...doLote.filter((x) => x.b.tipo !== "boleto" || (juntos && !meus.includes(x)))].map((x) => x.t);
+    return { ...c, nome: c.fornecedor, anexos: ordem, aviso: faltaBoleto ? "Falta anexar o boleto" : undefined };
+  };
+  const faltando = contas.filter((c) => linha(c).aviso).length;
 
   return (
     <>
@@ -42,35 +52,28 @@ export default async function Pagar({ searchParams }: { searchParams: Promise<{ 
         titulo="Contas a pagar"
         subtitulo="Boletos da fábrica e de outros fornecedores. Anexe a nota e os boletos da compra para não depender do papel."
       />
-      {sp.lancado && <Aviso tom="ok">{sp.lancado} boleto(s) lançado(s).</Aviso>}
+      {sp.lancado && (
+        <Aviso tom="ok">
+          {sp.lancado} boleto(s) lançado(s){Number(sp.anexos) > 0 ? ` e ${sp.anexos} arquivo(s) anexado(s)` : ""}.
+        </Aviso>
+      )}
+      {faltando > 0 && (
+        <Aviso tom="aviso">
+          {faltando} boleto(s) em aberto sem o arquivo anexado. Use &quot;📎 Anexar nota/boleto&quot; no boleto marcado.
+        </Aviso>
+      )}
 
       <ContasTopo tabela="contas_pagar" totais={totais} feito={sp.feito} desfeito={sp.desfeito} voltar={voltar} />
 
       <Secao titulo="Boletos">
         <Abas atual={filtro} itens={FILTROS.map((f) => ({ ...f, href: `/pagar?filtro=${f.valor}` }))} />
         {filtro === "pagos" && <SomaLista contas={contas} rotulo="pago(s)" />}
-        <ListaContas tabela="contas_pagar" voltar={voltar} rotuloPago="Pago" contas={contas.map((c) => ({ ...c, nome: c.fornecedor, anexos: anexosDoLote(c.lote) }))} />
+        <ListaContas tabela="contas_pagar" voltar={voltar} rotuloPago="Pago" contas={contas.map(linha)} />
       </Secao>
 
-      <Secao titulo="Lançar boletos">
+      <Secao titulo="Lançar compra (nota + boletos)">
         <Cartao>
-          <form action={lancarPagar} className="space-y-4">
-            <div className="grid gap-4 sm:grid-cols-2">
-              <Campo rotulo="Fornecedor">
-                <input name="fornecedor" defaultValue="Fábrica" list="fornecedores" className={cls.input} />
-                <datalist id="fornecedores">
-                  {fornecedores.map((f) => (
-                    <option key={f.fornecedor} value={f.fornecedor} />
-                  ))}
-                </datalist>
-              </Campo>
-              <Campo rotulo="Descrição (opcional)">
-                <input name="descricao" className={cls.input} placeholder="Ex.: NF 5678, compra de outubro" />
-              </Campo>
-            </div>
-            <ParcelasEditor primeiroVencimento={somarDias(dia, 30)} />
-            <Enviar>Lançar</Enviar>
-          </form>
+          <CompraFabrica fornecedores={fornecedores.map((f) => f.fornecedor)} primeiroVencimento={somarDias(dia, 30)} />
         </Cartao>
       </Secao>
     </>

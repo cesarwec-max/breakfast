@@ -3,6 +3,7 @@ import Link from "next/link";
 import { exigirLogin } from "@/lib/auth";
 import { listarAnexos, listarContasReceber, totaisContas, type FiltroConta } from "@/lib/dados";
 import { anexosTela } from "@/lib/anexos";
+import { linkCobranca } from "@/lib/cobranca";
 import { hoje, somarDias } from "@/lib/formato";
 import { opcoesFormulario } from "@/lib/opcoes";
 import { Enviar } from "@/components/botoes";
@@ -60,7 +61,13 @@ export default async function Receber({ searchParams }: { searchParams: Promise<
           tabela="contas_receber"
           voltar={voltar}
           rotuloPago="Recebido"
-          contas={contas.map((c) => ({ ...c, nome: c.cliente, href: `/clientes/${c.cliente_id}`, anexos: anexosDa(c.id, c.pedido_id) }))}
+          contas={contas.map((c) => ({
+            ...c,
+            nome: c.cliente,
+            href: `/clientes/${c.cliente_id}`,
+            anexos: anexosDa(c.id, c.pedido_id),
+            cobrar: linkCobranca(c, [c], dia),
+          }))}
         />
       </Secao>
 

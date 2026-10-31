@@ -15,6 +15,7 @@ function lerProduto(form: FormData) {
     sabor: String(form.get("sabor") ?? "").trim(),
     unidade: String(form.get("unidade") ?? "un").trim() || "un",
     preco: lerValor(form.get("preco")),
+    estoque_minimo: Math.max(0, lerValor(form.get("estoque_minimo"))),
   };
 }
 
