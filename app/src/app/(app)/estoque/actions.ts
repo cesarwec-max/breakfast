@@ -42,7 +42,7 @@ export async function atualizarProduto(id: number, form: FormData) {
   redirect(`/estoque/${id}?salvo=1`);
 }
 
-/** Entrada, saída ou contagem (ajusta o saldo para o número contado). */
+/** Entrada, saída ou contagem (ajusta o estoque na prateleira para o número contado). */
 export async function lancarMovimento(form: FormData) {
   await exigirLogin();
   const produtoId = Number(form.get("produto_id"));
@@ -55,10 +55,11 @@ export async function lancarMovimento(form: FormData) {
   if (tipo === "contagem") {
     const produto = await obterProduto(produtoId);
     if (!produto) throw new Error("Produto não encontrado.");
-    const diferenca = Math.round((quantidade - produto.saldo) * 100) / 100;
+    // Conta-se o que está na prateleira (inclui o separado para pedidos pendentes)
+    const diferenca = Math.round((quantidade - produto.fisico) * 100) / 100;
     if (diferenca !== 0) {
       await sql`INSERT INTO estoque_movimentos (produto_id, tipo, quantidade, observacao)
-                VALUES (${produtoId}, 'ajuste', ${diferenca}, ${observacao || `Contagem: ${quantidade}`})`;
+                VALUES (${produtoId}, 'ajuste', ${diferenca}, ${observacao || `Contagem na prateleira: ${quantidade}`})`;
     }
   } else {
     if (quantidade <= 0) throw new Error("Informe a quantidade.");

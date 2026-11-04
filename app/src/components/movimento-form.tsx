@@ -55,7 +55,7 @@ export function MovimentoForm({
           </select>
         </Campo>
       )}
-      <Campo rotulo={tipo === "contagem" ? "Quantidade contada" : "Quantidade"} className={produtoFixo ? "sm:col-span-2" : ""}>
+      <Campo rotulo={tipo === "contagem" ? "Quantidade na prateleira" : "Quantidade"} className={produtoFixo ? "sm:col-span-2" : ""}>
         <input name="quantidade" required inputMode="decimal" className={cls.input} placeholder="0" />
       </Campo>
       <Campo rotulo="Observação (opcional)" className="sm:col-span-2">
@@ -68,7 +68,7 @@ export function MovimentoForm({
       <div className="sm:col-span-2">
         <Enviar>{tipo === "entrada" ? "Lançar entrada" : tipo === "saida" ? "Lançar saída" : "Ajustar estoque"}</Enviar>
         {tipo === "contagem" && (
-          <p className="mt-2 text-xs text-muted">A contagem corrige o saldo para o número contado e registra a diferença.</p>
+          <p className="mt-2 text-xs text-muted">Conte o que está na prateleira, inclusive o que está separado para pedidos ainda não saídos. O sistema corrige e registra a diferença.</p>
         )}
       </div>
     </form>

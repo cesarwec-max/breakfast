@@ -67,7 +67,12 @@ export type Produto = {
   unidade: string;
   preco: number;
   ativo: boolean;
+  /** Livre para vender: o que sobra depois de separar os pedidos lançados. */
   saldo: number;
+  /** Separado para pedidos pendentes (ainda não saíram para entrega). */
+  reservado: number;
+  /** Na prateleira: o que existe de verdade = livre + reservado. Sai quando o pedido vai "em rota" ou é entregue. */
+  fisico: number;
   tem_foto: boolean;
   estoque_minimo: number;
 };
@@ -75,10 +80,16 @@ export type Produto = {
 /** Sem saldo, ou no mínimo/abaixo dele (quando há mínimo definido). */
 export const acabando = (p: Pick<Produto, "saldo" | "estoque_minimo">) => p.saldo <= 0 || (p.estoque_minimo > 0 && p.saldo <= p.estoque_minimo);
 
+// Itens de pedidos pendentes: já descontados do "livre", mas ainda na prateleira
+const reservadoSql = () => sql`COALESCE((SELECT SUM(i.quantidade) FROM pedido_itens i JOIN pedidos pe ON pe.id = i.pedido_id
+  WHERE i.produto_id = p.id AND pe.status = 'pendente'), 0)::numeric`;
+
 export async function listarProdutos({ incluirInativos = false } = {}) {
   return sql<Produto[]>`
     SELECT p.id, p.nome, p.sabor, p.unidade, p.preco, p.ativo, p.estoque_minimo, p.criado_em, (p.foto IS NOT NULL) AS tem_foto,
-      COALESCE(SUM(CASE WHEN m.tipo = 'saida' THEN -m.quantidade ELSE m.quantidade END), 0)::numeric AS saldo
+      COALESCE(SUM(CASE WHEN m.tipo = 'saida' THEN -m.quantidade ELSE m.quantidade END), 0)::numeric AS saldo,
+      ${reservadoSql()} AS reservado,
+      (COALESCE(SUM(CASE WHEN m.tipo = 'saida' THEN -m.quantidade ELSE m.quantidade END), 0) + ${reservadoSql()})::numeric AS fisico
     FROM produtos p
     LEFT JOIN estoque_movimentos m ON m.produto_id = p.id
     WHERE ${incluirInativos ? sql`true` : sql`p.ativo`}
@@ -89,7 +100,9 @@ export async function listarProdutos({ incluirInativos = false } = {}) {
 export async function obterProduto(id: number) {
   const [p] = await sql<Produto[]>`
     SELECT p.id, p.nome, p.sabor, p.unidade, p.preco, p.ativo, p.estoque_minimo, p.criado_em, (p.foto IS NOT NULL) AS tem_foto,
-      COALESCE(SUM(CASE WHEN m.tipo = 'saida' THEN -m.quantidade ELSE m.quantidade END), 0)::numeric AS saldo
+      COALESCE(SUM(CASE WHEN m.tipo = 'saida' THEN -m.quantidade ELSE m.quantidade END), 0)::numeric AS saldo,
+      ${reservadoSql()} AS reservado,
+      (COALESCE(SUM(CASE WHEN m.tipo = 'saida' THEN -m.quantidade ELSE m.quantidade END), 0) + ${reservadoSql()})::numeric AS fisico
     FROM produtos p
     LEFT JOIN estoque_movimentos m ON m.produto_id = p.id
     WHERE p.id = ${id}

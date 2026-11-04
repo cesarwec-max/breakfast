@@ -68,6 +68,11 @@ que uso comercial pede o plano Pro.
   escolher o contato.
 - **Painel (tela inicial):** vendas de hoje/do mês (pedidos não cancelados pela data de lançamento, comparando com o
   mês passado até o mesmo dia — `resumoVendas`), ticket médio, recebido no mês, para cobrar, mais vendidos, acabando.
+- **Três números de estoque** (`listarProdutos`/`obterProduto`): `saldo` = **livre para vender** (soma dos movimentos;
+  o pedido desconta ao ser lançado), `reservado` = itens de pedidos com status `pendente` (ainda não saíram) e
+  `fisico` = **na prateleira** = livre + reservado. O físico só cai quando o pedido vai "em rota"/entregue (sai do
+  reservado). A **contagem** do estoque é do que está na prateleira (ajusta pelo `fisico`). A página do produto lista
+  os pedidos que seguram a reserva.
 - **Estoque mínimo** (`produtos.estoque_minimo`): no mínimo ou abaixo = "acabando" (`acabando()` em `dados.ts`).
   `/estoque/compra`: lista de compra com sugestão (dobro do mínimo − saldo) e texto para a fábrica no WhatsApp.
 - **Solicitação de NF (para o contador):** A4 simples, cópia fiel do modelo do usuário

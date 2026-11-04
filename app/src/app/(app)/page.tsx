@@ -239,7 +239,7 @@ export default async function Inicio() {
                   <Link href={`/estoque/${p.id}`} className="flex justify-between px-4 py-3 hover:bg-background">
                     <span>{p.nome}</span>
                     <span className={`tabular font-semibold ${p.saldo <= 0 ? "text-danger" : "text-warn"}`}>
-                      {qtd(p.saldo)} {p.unidade}
+                      {qtd(p.saldo)} {p.unidade} livre
                       {p.estoque_minimo > 0 && <span className="font-normal text-muted"> / mín. {qtd(p.estoque_minimo)}</span>}
                     </span>
                   </Link>

@@ -1,8 +1,9 @@
 import type { Metadata } from "next";
 import { notFound } from "next/navigation";
 import { exigirLogin } from "@/lib/auth";
-import { listarMovimentos, obterProduto, acabando } from "@/lib/dados";
-import { qtd, qtdCampo, valorCampo } from "@/lib/formato";
+import Link from "next/link";
+import { listarMovimentos, listarPedidos, obterProduto, acabando } from "@/lib/dados";
+import { dataBR, qtd, qtdCampo, valorCampo } from "@/lib/formato";
 import { Confirmar, Enviar } from "@/components/botoes";
 import { FotoProduto } from "@/components/foto-produto";
 import { MovimentoForm } from "@/components/movimento-form";
@@ -24,7 +25,12 @@ export default async function ProdutoPagina({
   const { salvo } = await searchParams;
   const produto = Number.isInteger(id) ? await obterProduto(id) : null;
   if (!produto) notFound();
-  const movimentos = await listarMovimentos({ produtoId: id, limite: 100 });
+  const [movimentos, pendentes] = await Promise.all([listarMovimentos({ produtoId: id, limite: 100 }), listarPedidos({ status: "pendente" })]);
+  // Pedidos que ainda não saíram e seguram este produto
+  const reservas = pendentes
+    .filter((p) => p.status === "pendente")
+    .map((p) => ({ ...p, quantidade: p.itens.filter((i) => i.produto_id === id).reduce((t, i) => t + i.quantidade, 0) }))
+    .filter((p) => p.quantidade > 0);
   const voltar = `/estoque/${id}`;
 
   return (
@@ -34,9 +40,42 @@ export default async function ProdutoPagina({
 
       <div className="grid gap-6 lg:grid-cols-2">
         <div className="space-y-6">
-          <Numero rotulo="Saldo atual" valor={`${qtd(produto.saldo)} ${produto.unidade}`} tom={produto.saldo <= 0 ? "perigo" : acabando(produto) ? "aviso" : "neutro"}
-            detalhe={produto.estoque_minimo > 0 ? `mínimo: ${qtd(produto.estoque_minimo)} ${produto.unidade}` : "sem estoque mínimo definido"}
-          />
+          <div className="grid grid-cols-3 gap-3">
+            <Numero rotulo="📦 Na prateleira" valor={qtd(produto.fisico)} detalhe={produto.unidade} tom={produto.fisico <= 0 ? "perigo" : "neutro"} />
+            <Numero rotulo="🔒 Reservado" valor={qtd(produto.reservado)} detalhe="em pedidos que não saíram" />
+            <Numero
+              rotulo="✅ Livre"
+              valor={qtd(produto.saldo)}
+              tom={produto.saldo <= 0 ? "perigo" : acabando(produto) ? "aviso" : "ok"}
+              detalhe={
+                produto.saldo < 0
+                  ? `faltam ${qtd(-produto.saldo)} para os pedidos`
+                  : produto.estoque_minimo > 0
+                    ? `mínimo: ${qtd(produto.estoque_minimo)}`
+                    : "sem mínimo definido"
+              }
+            />
+          </div>
+          {reservas.length > 0 && (
+            <Cartao>
+              <h2 className="mb-2 font-semibold">Reservado para estes pedidos</h2>
+              <ul className="divide-y divide-line text-sm">
+                {reservas.map((r) => (
+                  <li key={r.id}>
+                    <Link href={`/pedidos/${r.id}`} className="flex justify-between gap-3 py-2 hover:text-accent">
+                      <span>
+                        #{r.id} · {r.cliente} · entrega {dataBR(r.data_entrega)}
+                      </span>
+                      <span className="tabular font-semibold">
+                        {qtd(r.quantidade)} {produto.unidade}
+                      </span>
+                    </Link>
+                  </li>
+                ))}
+              </ul>
+              <p className="mt-2 text-xs text-muted">Sai da prateleira quando o pedido for marcado como &quot;em rota&quot; ou entregue.</p>
+            </Cartao>
+          )}
           <Cartao>
             <h2 className="mb-3 font-semibold">Lançar movimentação</h2>
             <MovimentoForm acao={lancarMovimento} produtos={[]} produtoFixo={id} voltar={voltar} />

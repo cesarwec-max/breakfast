@@ -14,7 +14,7 @@ export default async function Compra() {
     .map((p) => {
       const baixo = acabando(p);
       const sugestao = baixo && p.estoque_minimo > 0 ? Math.max(0, Math.ceil(p.estoque_minimo * 2 - p.saldo)) : baixo ? Math.max(0, Math.ceil(-p.saldo)) : 0;
-      return { id: p.id, nome: p.nome, sabor: p.sabor, unidade: p.unidade, saldo: p.saldo, minimo: p.estoque_minimo, baixo, sugestao };
+      return { id: p.id, nome: p.nome, sabor: p.sabor, unidade: p.unidade, saldo: p.saldo, fisico: p.fisico, minimo: p.estoque_minimo, baixo, sugestao };
     })
     .sort((a, b) => Number(b.baixo) - Number(a.baixo));
 
@@ -22,7 +22,7 @@ export default async function Compra() {
     <>
       <Titulo
         titulo="Lista de compra"
-        subtitulo="Produtos acabando aparecem primeiro, já com uma quantidade sugerida (o dobro do mínimo). Ajuste e envie para a fábrica."
+        subtitulo="Produtos acabando aparecem primeiro, já com uma quantidade sugerida (o dobro do mínimo, contando o que já está reservado para pedidos). Ajuste e envie para a fábrica."
         voltar={{ href: "/estoque", rotulo: "Estoque" }}
       />
       <ListaCompra itens={itens} />

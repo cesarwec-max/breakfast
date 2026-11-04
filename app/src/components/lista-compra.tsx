@@ -4,7 +4,7 @@ import { useState } from "react";
 import { lerValor, qtd } from "@/lib/formato";
 import { Selo, cls } from "./ui";
 
-type Item = { id: number; nome: string; sabor: string; unidade: string; saldo: number; minimo: number; baixo: boolean; sugestao: number };
+type Item = { id: number; nome: string; sabor: string; unidade: string; saldo: number; fisico: number; minimo: number; baixo: boolean; sugestao: number };
 
 /** Quantidades a pedir + texto pronto para mandar à fábrica pelo WhatsApp. */
 export function ListaCompra({ itens }: { itens: Item[] }) {
@@ -34,7 +34,7 @@ export function ListaCompra({ itens }: { itens: Item[] }) {
                 {i.sabor && <span className="text-accent"> {i.sabor}</span>}
               </div>
               <div className="text-xs text-muted">
-                Saldo {qtd(i.saldo)} {i.unidade}
+                Prateleira {qtd(i.fisico)} · livre {qtd(i.saldo)} {i.unidade}
                 {i.minimo > 0 && ` · mínimo ${qtd(i.minimo)}`} {i.baixo && <Selo tom={i.saldo <= 0 ? "perigo" : "aviso"}>{i.saldo <= 0 ? "sem estoque" : "acabando"}</Selo>}
               </div>
             </div>
