@@ -49,7 +49,7 @@ export function MovimentoForm({
             </option>
             {produtos.map((p) => (
               <option key={p.id} value={p.id}>
-                {p.nome}
+                {p.sabor ? `${p.nome} · ${p.sabor}` : p.nome}
               </option>
             ))}
           </select>

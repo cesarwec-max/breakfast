@@ -124,7 +124,7 @@ export type Movimento = {
 
 export async function listarMovimentos({ produtoId, limite = 50 }: { produtoId?: number; limite?: number } = {}) {
   return sql<Movimento[]>`
-    SELECT m.*, p.nome AS produto, p.unidade
+    SELECT m.*, CASE WHEN p.sabor <> '' THEN p.nome || ' · ' || p.sabor ELSE p.nome END AS produto, p.unidade
     FROM estoque_movimentos m JOIN produtos p ON p.id = m.produto_id
     WHERE ${produtoId ? sql`m.produto_id = ${produtoId}` : sql`true`}
     ORDER BY m.criado_em DESC, m.id DESC

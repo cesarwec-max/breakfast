@@ -237,7 +237,10 @@ export default async function Inicio() {
               {zerados.map((p) => (
                 <li key={p.id}>
                   <Link href={`/estoque/${p.id}`} className="flex justify-between px-4 py-3 hover:bg-background">
-                    <span>{p.nome}</span>
+                    <span>
+                      {p.nome}
+                      {p.sabor && <span className="text-accent"> · {p.sabor}</span>}
+                    </span>
                     <span className={`tabular font-semibold ${p.saldo <= 0 ? "text-danger" : "text-warn"}`}>
                       {qtd(p.fisico)} {p.unidade} na prateleira
                       {p.reservado > 0 && <span className="font-normal text-muted"> · {qtd(p.reservado)} reservado</span>}
