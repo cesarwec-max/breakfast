@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import { exigirLogin } from "@/lib/auth";
 import { ClienteForm } from "@/components/cliente-form";
+import { listarRepresentantes } from "@/lib/comissoes";
 import { Titulo } from "@/components/ui";
 import { criarCliente } from "../actions";
 
@@ -12,7 +13,7 @@ export default async function NovoCliente({ searchParams }: { searchParams: Prom
   return (
     <>
       <Titulo titulo="Novo cliente" voltar={{ href: voltar ?? "/clientes", rotulo: "Voltar" }} />
-      <ClienteForm acao={criarCliente} voltar={voltar} textoBotao="Cadastrar cliente" />
+      <ClienteForm acao={criarCliente} voltar={voltar} textoBotao="Cadastrar cliente" representantes={await listarRepresentantes()} />
     </>
   );
 }

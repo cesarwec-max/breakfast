@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import { exigirLogin } from "@/lib/auth";
 import { hoje } from "@/lib/formato";
 import { opcoesFormulario } from "@/lib/opcoes";
+import { listarRepresentantes } from "@/lib/comissoes";
 import { PedidoForm } from "@/components/pedido-form";
 import { Titulo } from "@/components/ui";
 import { criarPedido } from "../actions";
@@ -11,7 +12,7 @@ export const metadata: Metadata = { title: "Novo pedido" };
 export default async function NovoPedido({ searchParams }: { searchParams: Promise<{ cliente?: string }> }) {
   await exigirLogin();
   const { cliente } = await searchParams;
-  const { clientes, produtos } = await opcoesFormulario();
+  const [{ clientes, produtos }, representantes] = await Promise.all([opcoesFormulario(), listarRepresentantes()]);
   return (
     <>
       <Titulo titulo="Novo pedido" voltar={{ href: "/pedidos", rotulo: "Pedidos" }} />
@@ -21,6 +22,7 @@ export default async function NovoPedido({ searchParams }: { searchParams: Promi
         produtos={produtos}
         voltar="/pedidos/novo"
         inicial={{ cliente_id: cliente ? Number(cliente) : undefined, data_entrega: hoje() }}
+        representantes={representantes}
         textoBotao="Salvar pedido"
       />
     </>

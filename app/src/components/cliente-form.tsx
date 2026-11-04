@@ -13,11 +13,14 @@ export function ClienteForm({
   inicial = {},
   voltar,
   textoBotao = "Salvar cliente",
+  representantes = [],
 }: {
   acao: (form: FormData) => Promise<void>;
   inicial?: Valores;
   voltar?: string;
   textoBotao?: string;
+  /** Representantes para escolher quem indicou o cliente */
+  representantes?: { id: number; nome: string }[];
 }) {
   const [v, setV] = useState<Valores>(inicial);
   const [buscandoCep, setBuscandoCep] = useState(false);
@@ -64,6 +67,18 @@ export function ClienteForm({
           {campo("cep", { inputMode: "numeric", onBlur: buscarCep, placeholder: "00000-000" })}
         </Campo>
         <Campo rotulo="Telefone / WhatsApp">{campo("telefone", { inputMode: "tel" })}</Campo>
+        {representantes.length > 0 && (
+          <Campo rotulo="Indicado pelo representante" dica="Os pedidos deste cliente já vêm com a comissão para ele." className="sm:col-span-2">
+            <select name="representante_id" defaultValue={inicial.representante_id ?? ""} className={cls.input}>
+              <option value="">Nenhum (venda direta)</option>
+              {representantes.map((r) => (
+                <option key={r.id} value={r.id}>
+                  {r.nome}
+                </option>
+              ))}
+            </select>
+          </Campo>
+        )}
         <Campo rotulo="Endereço (rua, avenida)" className="sm:col-span-2">
           {campo("endereco")}
         </Campo>

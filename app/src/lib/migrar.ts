@@ -138,6 +138,33 @@ ALTER TABLE contas_receber ADD COLUMN IF NOT EXISTS automatica boolean NOT NULL 
 
 -- Estoque mínimo: abaixo dele o produto entra em "acabando" e na lista de compra
 ALTER TABLE produtos ADD COLUMN IF NOT EXISTS estoque_minimo numeric(12,2) NOT NULL DEFAULT 0;
+
+-- Comissões: representantes com faixas de percentual sobre as vendas do mês (pela data de entrega)
+CREATE TABLE IF NOT EXISTS representantes (
+  id serial PRIMARY KEY,
+  nome text NOT NULL,
+  telefone text NOT NULL DEFAULT '',
+  -- [{"a_partir_de": 0, "percentual": 3.5}, {"a_partir_de": 200000, "percentual": 4.5}, ...]
+  faixas jsonb NOT NULL DEFAULT '[{"a_partir_de": 0, "percentual": 0}]',
+  ativo boolean NOT NULL DEFAULT true,
+  criado_em timestamptz NOT NULL DEFAULT now()
+);
+ALTER TABLE clientes ADD COLUMN IF NOT EXISTS representante_id integer REFERENCES representantes(id) ON DELETE SET NULL;
+ALTER TABLE pedidos ADD COLUMN IF NOT EXISTS representante_id integer REFERENCES representantes(id) ON DELETE SET NULL;
+CREATE INDEX IF NOT EXISTS pedidos_representante ON pedidos (representante_id, data_entrega);
+-- Mês fechado: fica gravado como estava (total, percentual, pedidos), mesmo se algo mudar depois
+CREATE TABLE IF NOT EXISTS comissoes_fechadas (
+  id serial PRIMARY KEY,
+  representante_id integer NOT NULL REFERENCES representantes(id),
+  mes date NOT NULL,
+  total numeric(14,2) NOT NULL,
+  percentual numeric(6,3) NOT NULL,
+  valor numeric(14,2) NOT NULL,
+  pedidos jsonb NOT NULL,
+  conta_pagar_id integer REFERENCES contas_pagar(id) ON DELETE SET NULL,
+  fechado_em timestamptz NOT NULL DEFAULT now(),
+  UNIQUE (representante_id, mes)
+);
 `;
 
 export async function migrar() {
@@ -172,5 +199,20 @@ export async function migrar() {
           SELECT 1 FROM contas_receber r LEFT JOIN solicitacoes s ON s.id = r.solicitacao_id
           WHERE r.pedido_id = pe.id OR s.pedido_id = pe.id)`;
     for (const p of pedidos) await sincronizarReceber(tx, p.id);
+  });
+
+  // Uma vez só: os dois representantes de hoje, com os percentuais combinados
+  await sql.begin(async (tx) => {
+    const [nova] = await tx`INSERT INTO migracoes (nome) VALUES ('representantes-iniciais') ON CONFLICT DO NOTHING RETURNING nome`;
+    if (!nova) return;
+    const [{ n }] = await tx<{ n: number }[]>`SELECT count(*)::int AS n FROM representantes`;
+    if (n > 0) return;
+    await tx`INSERT INTO representantes (nome, faixas) VALUES
+      ('Marco', ${tx.json([
+        { a_partir_de: 0, percentual: 3.5 },
+        { a_partir_de: 200000, percentual: 4.5 },
+        { a_partir_de: 700000, percentual: 5 },
+      ])}),
+      ('Tae', ${tx.json([{ a_partir_de: 0, percentual: 8 }])})`;
   });
 }

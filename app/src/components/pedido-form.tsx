@@ -12,6 +12,7 @@ export function PedidoForm({
   voltar,
   inicial,
   textoBotao,
+  representantes = [],
 }: {
   acao: (form: FormData) => Promise<void>;
   clientes: OpcaoCliente[];
@@ -23,9 +24,12 @@ export function PedidoForm({
     observacao?: string;
     forma_pagamento?: string;
     vencimento_pagamento?: string | null;
+    /** undefined = pedido novo (vem do cadastro do cliente) */
+    representante_id?: number | null;
     itens?: { produto_id: number; quantidade: number; preco_unitario: number }[];
   };
   textoBotao: string;
+  representantes?: { id: number; nome: string }[];
 }) {
   if (produtos.length === 0) {
     return (
@@ -58,6 +62,23 @@ export function PedidoForm({
           <input type="date" name="vencimento_pagamento" defaultValue={inicial.vencimento_pagamento ?? ""} className={cls.input} />
         </Campo>
       </div>
+      {representantes.length > 0 && (
+        <Campo rotulo="Comissão para o representante" className="max-w-md" dica="Comissão calculada pela data de entrega do pedido.">
+          <select
+            name="representante_id"
+            defaultValue={inicial.representante_id === undefined ? "cliente" : (inicial.representante_id ?? "")}
+            className={cls.input}
+          >
+            {inicial.representante_id === undefined && <option value="cliente">O do cadastro do cliente</option>}
+            <option value="">Nenhum (venda direta)</option>
+            {representantes.map((r) => (
+              <option key={r.id} value={r.id}>
+                {r.nome}
+              </option>
+            ))}
+          </select>
+        </Campo>
+      )}
       <Campo rotulo="Observação (opcional)">
         <textarea name="observacao" rows={2} defaultValue={inicial.observacao} className={cls.input} placeholder="Ex.: entregar até 10h, falar com Maria" />
       </Campo>

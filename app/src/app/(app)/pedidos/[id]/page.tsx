@@ -97,6 +97,14 @@ export default async function PedidoPagina({
             {p.vencimento_pagamento && <> · até {dataBR(p.vencimento_pagamento)}</>}
             {/pix/i.test(p.forma_pagamento) && <span className="text-muted"> · chave breakfastpix@gmail.com</span>}
           </p>
+          {p.representante && (
+            <p className="mt-3 rounded-lg bg-background px-3 py-2 text-sm">
+              🤝 Comissão: <strong>{p.representante}</strong>{" "}
+              <Link href={`/comissoes?mes=${p.data_entrega.slice(0, 7)}`} className={cls.link}>
+                ver comissões do mês
+              </Link>
+            </p>
+          )}
           {p.observacao && <p className="mt-3 rounded-lg bg-background px-3 py-2 text-sm">📝 {p.observacao}</p>}
         </Cartao>
 

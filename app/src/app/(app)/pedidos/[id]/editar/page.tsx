@@ -3,6 +3,7 @@ import { notFound, redirect } from "next/navigation";
 import { exigirLogin } from "@/lib/auth";
 import { aEntregar, obterPedido } from "@/lib/dados";
 import { opcoesFormulario } from "@/lib/opcoes";
+import { listarRepresentantes } from "@/lib/comissoes";
 import { PedidoForm } from "@/components/pedido-form";
 import { Titulo } from "@/components/ui";
 import { atualizarPedido } from "../../actions";
@@ -15,7 +16,7 @@ export default async function EditarPedido({ params }: { params: Promise<{ id: s
   const pedido = Number.isInteger(id) ? await obterPedido(id) : null;
   if (!pedido) notFound();
   if (!aEntregar(pedido.status)) redirect(`/pedidos/${id}`);
-  const { clientes, produtos } = await opcoesFormulario();
+  const [{ clientes, produtos }, representantes] = await Promise.all([opcoesFormulario(), listarRepresentantes()]);
 
   // Mantém na lista um produto que foi desativado depois do pedido
   for (const i of pedido.itens) {
@@ -33,6 +34,7 @@ export default async function EditarPedido({ params }: { params: Promise<{ id: s
         produtos={produtos}
         voltar={`/pedidos/${id}/editar`}
         inicial={pedido}
+        representantes={representantes}
         textoBotao="Salvar alterações"
       />
     </>

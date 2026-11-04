@@ -24,6 +24,17 @@ function lerPedido(form: FormData) {
   };
 }
 
+/** Representante do pedido: o escolhido, nenhum, ou "cliente" (o do cadastro do cliente). */
+async function lerRepresentante(tx: Tx, form: FormData, clienteId: number) {
+  if (!form.has("representante_id")) return {};
+  const v = String(form.get("representante_id") ?? "");
+  if (v === "cliente") {
+    const [c] = await tx<{ representante_id: number | null }[]>`SELECT representante_id FROM clientes WHERE id = ${clienteId}`;
+    return { representante_id: c?.representante_id ?? null };
+  }
+  return { representante_id: Number(v) || null };
+}
+
 async function gravarItens(tx: Tx, pedidoId: number, itens: ReturnType<typeof lerItens>) {
   await tx`DELETE FROM pedido_itens WHERE pedido_id = ${pedidoId}`;
   await tx`INSERT INTO pedido_itens ${tx(itens.map((i) => ({ ...i, pedido_id: pedidoId })))}`;
@@ -70,7 +81,8 @@ export async function criarPedido(form: FormData) {
   const dados = lerPedido(form);
   const itens = lerItens(form);
   const id = await sql.begin(async (tx) => {
-    const [{ id }] = await tx<{ id: number }[]>`INSERT INTO pedidos ${tx(dados)} RETURNING id`;
+    const rep = await lerRepresentante(tx, form, dados.cliente_id);
+    const [{ id }] = await tx<{ id: number }[]>`INSERT INTO pedidos ${tx({ ...dados, ...rep })} RETURNING id`;
     await gravarItens(tx, id, itens);
     await ajustarEstoque(tx, id, `Pedido #${id} lançado (${await nomeCliente(tx, id)})`);
     await sincronizarReceber(tx, id);
@@ -87,7 +99,8 @@ export async function atualizarPedido(id: number, form: FormData) {
   await sql.begin(async (tx) => {
     const [p] = await tx<{ status: string }[]>`SELECT status FROM pedidos WHERE id = ${id} FOR UPDATE`;
     if (p?.status !== "pendente" && p?.status !== "em_rota") throw new Error("Só pedidos a entregar podem ser editados.");
-    await tx`UPDATE pedidos SET ${tx(dados)} WHERE id = ${id}`;
+    const rep = await lerRepresentante(tx, form, dados.cliente_id);
+    await tx`UPDATE pedidos SET ${tx({ ...dados, ...rep })} WHERE id = ${id}`;
     await gravarItens(tx, id, itens);
     await ajustarEstoque(tx, id, `Pedido #${id} editado`);
     await sincronizarReceber(tx, id);

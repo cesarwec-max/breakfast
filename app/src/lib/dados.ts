@@ -18,6 +18,8 @@ export type Cliente = {
   cidade: string;
   uf: string;
   observacoes: string;
+  /** Representante que indicou o cliente (comissão dos pedidos dele) */
+  representante_id: number | null;
 };
 
 export const CAMPOS_CLIENTE = [
@@ -156,6 +158,8 @@ export type Pedido = {
   data_entrega: string;
   status: StatusPedido;
   observacao: string;
+  representante_id: number | null;
+  representante: string | null;
   forma_pagamento: string;
   vencimento_pagamento: string | null;
   entregue_em: Date | null;
@@ -166,7 +170,7 @@ export type Pedido = {
 };
 
 const selectPedido = () => sql`
-  SELECT pe.*, c.nome AS cliente,
+  SELECT pe.*, c.nome AS cliente, rp.nome AS representante,
     concat_ws(' - ',
       nullif(concat_ws(', ', nullif(c.endereco, ''), nullif(c.numero, '')), ''),
       nullif(c.bairro, ''),
@@ -180,7 +184,8 @@ const selectPedido = () => sql`
         'quantidade', i.quantidade, 'preco_unitario', i.preco_unitario) ORDER BY i.id)
       FROM pedido_itens i JOIN produtos p ON p.id = i.produto_id WHERE i.pedido_id = pe.id
     ), '[]') AS itens
-  FROM pedidos pe JOIN clientes c ON c.id = pe.cliente_id`;
+  FROM pedidos pe JOIN clientes c ON c.id = pe.cliente_id
+  LEFT JOIN representantes rp ON rp.id = pe.representante_id`;
 
 function normalizarItens(p: Pedido) {
   p.itens = p.itens.map((i) => ({ ...i, quantidade: Number(i.quantidade), preco_unitario: Number(i.preco_unitario) }));

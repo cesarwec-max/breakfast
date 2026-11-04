@@ -76,6 +76,16 @@ que uso comercial pede o plano Pro.
   exibir "livre para vender", que confundia); o livre aparece só como aviso ("tudo reservado", "faltam X p/ pedidos").
 - **Estoque mínimo** (`produtos.estoque_minimo`): no mínimo ou abaixo = "acabando" (`acabando()` em `dados.ts`).
   `/estoque/compra`: lista de compra com sugestão (dobro do mínimo − saldo) e texto para a fábrica no WhatsApp.
+- **Comissões** (`/comissoes`, `src/lib/comissoes.ts`, `app/(app)/comissoes/`): tabela `representantes` com `faixas`
+  (jsonb `[{a_partir_de, percentual}]`; a faixa alcançada pelo total do mês vale para o mês inteiro). Marco: 3,5% /
+  4,5% a partir de R$ 200 mil / 5% a partir de R$ 700 mil; Tae: 8% (migração única `representantes-iniciais`).
+  `clientes.representante_id` (quem indicou; ao salvar o cliente, os pedidos dele sem representante em mês aberto
+  passam para ele) e `pedidos.representante_id` (no formulário: "O do cadastro do cliente" por padrão).
+  Mês = **data de entrega**; cancelados não contam; comissão sobre o pedido feito (não espera o pagamento).
+  "Fechar mês" grava tudo em `comissoes_fechadas` (snapshot, nada muda depois) e pode lançar a comissão em Contas a
+  pagar ("Comissão <nome>", vencimento sugerido dia 10 do mês seguinte). "Reabrir" apaga o snapshot e a conta (se
+  não paga). Relatório de produção em JPG/PDF: `components/folha-comissao.tsx` ("Prévia" se o mês está aberto).
+  Próximo passo combinado: metas e bonificação dos representantes.
 - **Solicitação de NF (para o contador):** A4 simples, cópia fiel do modelo do usuário
   `Solicitacao_NF_SPORT_BAR_MOOCA_R69500_FINAL.pdf` (tabelas, faixa laranja do total, "Instruções ao contador").
   PDF de **texto** (Helvetica, selecionável) feito com `pdf-lib` em `src/lib/nf-contador.ts`; prévia em HTML com as

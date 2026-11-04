@@ -12,6 +12,7 @@ const ITENS = [
   { href: "/receber", rotulo: "A receber" },
   { href: "/pagar", rotulo: "A pagar" },
   { href: "/clientes", rotulo: "Clientes" },
+  { href: "/comissoes", rotulo: "Comissões" },
 ];
 
 export function Menu() {

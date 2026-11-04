@@ -9,6 +9,7 @@ import { SeloVencimento } from "@/components/lista-contas";
 import { Anexos } from "@/components/anexos";
 import { brl, dataBR, hoje } from "@/lib/formato";
 import { ClienteForm } from "@/components/cliente-form";
+import { listarRepresentantes } from "@/lib/comissoes";
 import { Confirmar } from "@/components/botoes";
 import { Aviso, Secao, Selo, Titulo, cls } from "@/components/ui";
 import { atualizarCliente, excluirCliente } from "../actions";
@@ -56,7 +57,12 @@ export default async function ClientePagina({
         <Aviso>Este cliente tem pedidos, solicitações ou contas registradas e não pode ser excluído.</Aviso>
       )}
 
-      <ClienteForm key={JSON.stringify(cliente)} acao={atualizarCliente.bind(null, id)} inicial={cliente} />
+      <ClienteForm
+        key={JSON.stringify(cliente)}
+        acao={atualizarCliente.bind(null, id)}
+        inicial={cliente}
+        representantes={await listarRepresentantes()}
+      />
 
       <Secao titulo={`Notas e boletos emitidos (${anexos.length})`}>
         <Anexos anexos={anexos} vazio="Nenhum documento anexado. Anexe a nota e o boleto na página do pedido." />
