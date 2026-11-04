@@ -72,7 +72,8 @@ que uso comercial pede o plano Pro.
   o pedido desconta ao ser lançado), `reservado` = itens de pedidos com status `pendente` (ainda não saíram) e
   `fisico` = **na prateleira** = livre + reservado. O físico só cai quando o pedido vai "em rota"/entregue (sai do
   reservado). A **contagem** do estoque é do que está na prateleira (ajusta pelo `fisico`). A página do produto lista
-  os pedidos que seguram a reserva.
+  os pedidos que seguram a reserva. **As telas mostram só "Na prateleira" e "Reservado"** (o usuário pediu para não
+  exibir "livre para vender", que confundia); o livre aparece só como aviso ("tudo reservado", "faltam X p/ pedidos").
 - **Estoque mínimo** (`produtos.estoque_minimo`): no mínimo ou abaixo = "acabando" (`acabando()` em `dados.ts`).
   `/estoque/compra`: lista de compra com sugestão (dobro do mínimo − saldo) e texto para a fábrica no WhatsApp.
 - **Solicitação de NF (para o contador):** A4 simples, cópia fiel do modelo do usuário

@@ -34,7 +34,7 @@ export function ListaCompra({ itens }: { itens: Item[] }) {
                 {i.sabor && <span className="text-accent"> {i.sabor}</span>}
               </div>
               <div className="text-xs text-muted">
-                Prateleira {qtd(i.fisico)} · livre {qtd(i.saldo)} {i.unidade}
+                Prateleira {qtd(i.fisico)} {i.unidade} · reservado {qtd(i.fisico - i.saldo)}
                 {i.minimo > 0 && ` · mínimo ${qtd(i.minimo)}`} {i.baixo && <Selo tom={i.saldo <= 0 ? "perigo" : "aviso"}>{i.saldo <= 0 ? "sem estoque" : "acabando"}</Selo>}
               </div>
             </div>

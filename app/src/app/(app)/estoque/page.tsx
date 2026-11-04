@@ -20,7 +20,7 @@ export default async function Estoque({ searchParams }: { searchParams: Promise<
 
   return (
     <>
-      <Titulo titulo="Estoque" subtitulo="Quanto há na prateleira, quanto está separado para pedidos e quanto está livre para vender.">
+      <Titulo titulo="Estoque" subtitulo="Quanto há na prateleira e quanto já está separado para pedidos.">
         <Link href="/estoque/compra" className={cls.botao2}>
           🛒 Lista de compra{baixos ? ` (${baixos})` : ""}
         </Link>
@@ -31,16 +31,13 @@ export default async function Estoque({ searchParams }: { searchParams: Promise<
         <Vazio>Cadastre seus produtos abaixo para começar a controlar o estoque.</Vazio>
       ) : (
         <>
-          <div className="mb-3 grid gap-2 text-xs text-muted sm:grid-cols-3">
+          <div className="mb-3 grid gap-2 text-xs text-muted sm:grid-cols-2">
             <p>
               <strong className="text-foreground">📦 Na prateleira:</strong> o que existe de verdade na distribuidora. Só diminui quando o
               pedido sai (em rota ou entregue).
             </p>
             <p>
               <strong className="text-foreground">🔒 Reservado:</strong> separado para pedidos lançados que ainda não saíram.
-            </p>
-            <p>
-              <strong className="text-foreground">✅ Livre para vender:</strong> prateleira menos reservado.
             </p>
           </div>
           <div className="overflow-x-auto rounded-xl border border-line bg-surface">
@@ -51,10 +48,7 @@ export default async function Estoque({ searchParams }: { searchParams: Promise<
                   <th className="px-2 py-2 text-right font-semibold sm:px-4">
                     📦 <span className="hidden sm:inline">Na </span>prateleira
                   </th>
-                  <th className="px-2 py-2 text-right font-semibold sm:px-4">🔒 Reservado</th>
-                  <th className="px-3 py-2 text-right font-semibold sm:px-4">
-                    ✅ Livre<span className="hidden sm:inline"> para vender</span>
-                  </th>
+                  <th className="px-3 py-2 text-right font-semibold sm:px-4">🔒 Reservado</th>
                   <th className="hidden px-4 py-2 text-right font-semibold md:table-cell">Preço</th>
                 </tr>
               </thead>
@@ -68,16 +62,17 @@ export default async function Estoque({ searchParams }: { searchParams: Promise<
                       {p.sabor && <div className="text-xs text-accent">{p.sabor}</div>}
                       <div className="text-xs text-muted">{p.unidade}</div>
                     </td>
-                    <td className={`tabular px-2 py-3 text-right text-base font-bold sm:px-4 ${p.fisico <= 0 ? "text-danger" : ""}`}>{qtd(p.fisico)}</td>
-                    <td className="tabular px-2 py-3 text-right text-muted sm:px-4">{p.reservado ? qtd(p.reservado) : "—"}</td>
-                    <td className={`tabular px-3 py-3 text-right font-semibold sm:px-4 ${p.saldo <= 0 ? "text-danger" : acabando(p) ? "text-warn" : ""}`}>
-                      {qtd(p.saldo)}
+                    <td className={`tabular px-2 py-3 text-right text-base font-bold sm:px-4 ${p.fisico <= 0 ? "text-danger" : acabando(p) ? "text-warn" : ""}`}>
+                      {qtd(p.fisico)}
                       {p.saldo < 0 ? (
-                        <div className="text-xs font-normal">faltam {qtd(-p.saldo)} p/ pedidos</div>
+                        <div className="text-xs font-normal text-danger">faltam {qtd(-p.saldo)} p/ pedidos</div>
+                      ) : p.saldo === 0 && p.fisico > 0 ? (
+                        <div className="text-xs font-normal">tudo reservado</div>
                       ) : (
-                        acabando(p) && p.saldo > 0 && <div className="text-xs font-normal">acabando (mín. {qtd(p.estoque_minimo)})</div>
+                        acabando(p) && p.fisico > 0 && <div className="text-xs font-normal">acabando</div>
                       )}
                     </td>
+                    <td className="tabular px-3 py-3 text-right text-muted sm:px-4">{p.reservado ? qtd(p.reservado) : "—"}</td>
                     <td className="tabular hidden px-4 py-3 text-right text-muted md:table-cell">{brl(p.preco)}</td>
                   </tr>
                 ))}

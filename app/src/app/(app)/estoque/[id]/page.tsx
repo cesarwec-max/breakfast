@@ -40,21 +40,22 @@ export default async function ProdutoPagina({
 
       <div className="grid gap-6 lg:grid-cols-2">
         <div className="space-y-6">
-          <div className="grid grid-cols-3 gap-3">
-            <Numero rotulo="📦 Na prateleira" valor={qtd(produto.fisico)} detalhe={produto.unidade} tom={produto.fisico <= 0 ? "perigo" : "neutro"} />
-            <Numero rotulo="🔒 Reservado" valor={qtd(produto.reservado)} detalhe="em pedidos que não saíram" />
+          <div className="grid grid-cols-2 gap-3">
             <Numero
-              rotulo="✅ Livre"
-              valor={qtd(produto.saldo)}
-              tom={produto.saldo <= 0 ? "perigo" : acabando(produto) ? "aviso" : "ok"}
+              rotulo="📦 Na prateleira"
+              valor={`${qtd(produto.fisico)} ${produto.unidade}`}
+              tom={produto.fisico <= 0 ? "perigo" : acabando(produto) ? "aviso" : "neutro"}
               detalhe={
-                produto.saldo < 0
-                  ? `faltam ${qtd(-produto.saldo)} para os pedidos`
-                  : produto.estoque_minimo > 0
-                    ? `mínimo: ${qtd(produto.estoque_minimo)}`
-                    : "sem mínimo definido"
+                produto.saldo < 0 ? (
+                  <span className="text-danger">faltam {qtd(-produto.saldo)} para os pedidos</span>
+                ) : produto.estoque_minimo > 0 ? (
+                  `mínimo: ${qtd(produto.estoque_minimo)}`
+                ) : (
+                  "sem mínimo definido"
+                )
               }
             />
+            <Numero rotulo="🔒 Reservado" valor={`${qtd(produto.reservado)} ${produto.unidade}`} detalhe="em pedidos que ainda não saíram" />
           </div>
           {reservas.length > 0 && (
             <Cartao>
