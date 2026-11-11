@@ -5,6 +5,7 @@ import { exigirLogin } from "@/lib/auth";
 import { aEntregar, contasDoPedido, listarAnexos, obterPedido } from "@/lib/dados";
 import { anexosTela } from "@/lib/anexos";
 import { Anexos } from "@/components/anexos";
+import { Canhoto } from "@/components/canhoto";
 import { brl, dataBR, qtd } from "@/lib/formato";
 import { Confirmar, Enviar } from "@/components/botoes";
 import { Aviso, Cartao, Secao, Selo, Titulo, cls } from "@/components/ui";
@@ -109,6 +110,9 @@ export default async function PedidoPagina({
         </Cartao>
 
         <div className="space-y-3">
+          {p.status !== "cancelado" && (
+            <Canhoto pedidoId={id} canhotos={anexos.filter((a) => a.tipo === "canhoto")} entregue={p.status === "entregue"} />
+          )}
           {p.status === "pendente" && (
             <form action={marcarEmRota.bind(null, id, undefined)}>
               <Enviar className={`${cls.botao2} w-full`} pendente="Registrando…">
@@ -197,9 +201,10 @@ export default async function PedidoPagina({
         </div>
       </div>
 
-      <Secao titulo="Nota fiscal e boleto emitidos">
+      <Secao titulo="Documentos do pedido (nota, boleto, canhoto)">
         <p className="-mt-2 mb-3 text-sm text-muted">
-          Anexe aqui os arquivos que o financeiro devolver. Eles também aparecem em Contas a receber e na ficha do cliente.
+          Anexe aqui os arquivos que o financeiro devolver e o canhoto da entrega. Eles também aparecem em Contas a receber e na ficha do
+          cliente.
         </p>
         <Anexos anexos={anexos} alvo={{ pedidoId: id }} />
       </Secao>

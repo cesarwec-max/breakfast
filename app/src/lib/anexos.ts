@@ -5,10 +5,11 @@ export const LIMITE_ANEXO = 4 * 1024 * 1024; // a Vercel aceita até 4,5 MB por 
 export const TIPOS_ANEXO = [
   { valor: "nf", rotulo: "Nota fiscal" },
   { valor: "boleto", rotulo: "Boleto" },
+  { valor: "canhoto", rotulo: "Canhoto assinado (entrega)" },
   { valor: "outro", rotulo: "Outro (XML, comprovante…)" },
 ] as const;
 
-export const ROTULO_ANEXO: Record<string, string> = { nf: "Nota fiscal", boleto: "Boleto", outro: "Outro" };
+export const ROTULO_ANEXO: Record<string, string> = { nf: "Nota fiscal", boleto: "Boleto", canhoto: "Canhoto assinado", outro: "Outro" };
 
 const IMAGENS = ["image/jpeg", "image/png", "image/webp", "image/gif", "image/heic", "image/heif"];
 

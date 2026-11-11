@@ -10,6 +10,9 @@ export const EMPRESA = {
   pixCidade: "SAO PAULO",
 };
 
+/** Nichos sugeridos no cadastro do cliente (dá para escrever outro). */
+export const NICHOS = ["Padaria", "Cafeteria", "Lanchonete", "Mercado", "Outros"];
+
 /** Opções de forma de pagamento do pedido. */
 export const FORMAS_PAGAMENTO = ["PIX", "Boleto bancário", "Dinheiro", "Cartão", "Transferência bancária", "A combinar"];
 

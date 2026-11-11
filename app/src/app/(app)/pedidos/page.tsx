@@ -115,6 +115,12 @@ export default async function Pedidos({ searchParams }: { searchParams: Promise<
                           📎 {p.anexos}
                         </span>
                       )}
+                      {p.status === "entregue" && !p.tem_canhoto && <span className="text-xs text-warn">sem canhoto</span>}
+                      {p.tem_canhoto && (
+                        <span className="text-xs text-ok" title="Canhoto assinado anexado">
+                          ✓ canhoto
+                        </span>
+                      )}
                     </span>
                     {(p.status === "pendente" || p.status === "em_rota") && (
                       <div className="flex gap-1">

@@ -76,6 +76,11 @@ que uso comercial pede o plano Pro.
   exibir "livre para vender", que confundia); o livre aparece só como aviso ("tudo reservado", "faltam X p/ pedidos").
 - **Estoque mínimo** (`produtos.estoque_minimo`): no mínimo ou abaixo = "acabando" (`acabando()` em `dados.ts`).
   `/estoque/compra`: lista de compra com sugestão (dobro do mínimo − saldo) e texto para a fábrica no WhatsApp.
+- **Canhoto assinado** (`components/canhoto.tsx`, na página do pedido): foto do canhoto que o cliente assina na
+  entrega, anexo `tipo = 'canhoto'` ligado ao pedido (aparece também em Contas a receber e na ficha do cliente).
+  Não bloqueia o "entregue"; a lista de pedidos mostra "sem canhoto"/"✓ canhoto" (`pedidos.tem_canhoto` no select).
+- **Nicho do cliente** (`clientes.nicho`, texto livre com sugestões `NICHOS` em `lib/empresa.ts`): selo e filtro por
+  nicho na lista de clientes.
 - **Comissões** (`/comissoes`, `src/lib/comissoes.ts`, `app/(app)/comissoes/`): tabela `representantes` com `faixas`
   (jsonb `[{a_partir_de, percentual}]`; a faixa alcançada pelo total do mês vale para o mês inteiro). Marco: 3,5% /
   4,5% a partir de R$ 200 mil / 5% a partir de R$ 700 mil; Tae: 8% (migração única `representantes-iniciais`).

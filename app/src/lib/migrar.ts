@@ -165,6 +165,11 @@ CREATE TABLE IF NOT EXISTS comissoes_fechadas (
   fechado_em timestamptz NOT NULL DEFAULT now(),
   UNIQUE (representante_id, mes)
 );
+
+-- Foto do canhoto assinado na entrega (comprovante) e nicho do cliente
+ALTER TABLE anexos DROP CONSTRAINT IF EXISTS anexos_tipo_check;
+ALTER TABLE anexos ADD CONSTRAINT anexos_tipo_check CHECK (tipo IN ('nf','boleto','canhoto','outro'));
+ALTER TABLE clientes ADD COLUMN IF NOT EXISTS nicho text NOT NULL DEFAULT '';
 `;
 
 export async function migrar() {

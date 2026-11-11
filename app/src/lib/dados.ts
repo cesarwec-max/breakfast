@@ -18,6 +18,8 @@ export type Cliente = {
   cidade: string;
   uf: string;
   observacoes: string;
+  /** Padaria, cafeteria, lanchonete, mercado… */
+  nicho: string;
   /** Representante que indicou o cliente (comissão dos pedidos dele) */
   representante_id: number | null;
 };
@@ -37,6 +39,7 @@ export const CAMPOS_CLIENTE = [
   "cidade",
   "uf",
   "observacoes",
+  "nicho",
 ] as const;
 
 /** "Rua X, 10 - Bairro, Cidade/UF" */
@@ -47,11 +50,12 @@ export function enderecoCurto(c: Pick<Cliente, "endereco" | "numero" | "compleme
   return [rua + comp, c.bairro, cidade].filter(Boolean).join(" - ");
 }
 
-export async function listarClientes(busca = "") {
+export async function listarClientes(busca = "", nicho = "") {
   const q = `%${busca.trim()}%`;
   return sql<Cliente[]>`
     SELECT * FROM clientes
     WHERE ${busca.trim() ? sql`(nome ILIKE ${q} OR razao_social ILIKE ${q} OR cnpj_cpf ILIKE ${q})` : sql`true`}
+      AND ${nicho ? sql`lower(nicho) = lower(${nicho})` : sql`true`}
     ORDER BY lower(nome)`;
 }
 
@@ -158,6 +162,8 @@ export type Pedido = {
   data_entrega: string;
   status: StatusPedido;
   observacao: string;
+  /** Foto do canhoto assinado na entrega */
+  tem_canhoto: boolean;
   representante_id: number | null;
   representante: string | null;
   forma_pagamento: string;
@@ -178,6 +184,7 @@ const selectPedido = () => sql`
     ) AS endereco,
     COALESCE((SELECT SUM(i.quantidade * i.preco_unitario) FROM pedido_itens i WHERE i.pedido_id = pe.id), 0)::numeric AS total,
     (SELECT count(*)::int FROM anexos a WHERE a.pedido_id = pe.id) AS anexos,
+    EXISTS (SELECT 1 FROM anexos a WHERE a.pedido_id = pe.id AND a.tipo = 'canhoto') AS tem_canhoto,
     COALESCE((
       SELECT json_agg(json_build_object(
         'produto_id', i.produto_id, 'produto', p.nome, 'sabor', p.sabor, 'tem_foto', p.foto IS NOT NULL, 'unidade', p.unidade,
@@ -358,7 +365,7 @@ export async function resumoConta(tabela: "contas_receber" | "contas_pagar", id:
 
 // ---------- Anexos (notas e boletos emitidos) ----------
 
-export type TipoAnexo = "nf" | "boleto" | "outro";
+export type TipoAnexo = "nf" | "boleto" | "canhoto" | "outro";
 
 export type Anexo = {
   id: number;

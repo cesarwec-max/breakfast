@@ -40,7 +40,7 @@ export default async function ClientePagina({
 
   return (
     <>
-      <Titulo titulo={cliente.nome} subtitulo={cliente.razao_social || undefined} voltar={{ href: "/clientes", rotulo: "Clientes" }}>
+      <Titulo titulo={cliente.nome} subtitulo={[cliente.razao_social, cliente.nicho].filter(Boolean).join(" · ") || undefined} voltar={{ href: "/clientes", rotulo: "Clientes" }}>
         <Link href={`/pedidos/novo?cliente=${id}`} className={cls.botao}>
           Novo pedido
         </Link>
@@ -64,7 +64,7 @@ export default async function ClientePagina({
         representantes={await listarRepresentantes()}
       />
 
-      <Secao titulo={`Notas e boletos emitidos (${anexos.length})`}>
+      <Secao titulo={`Notas, boletos e canhotos (${anexos.length})`}>
         <Anexos anexos={anexos} vazio="Nenhum documento anexado. Anexe a nota e o boleto na página do pedido." />
       </Secao>
 

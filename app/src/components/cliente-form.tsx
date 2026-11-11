@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import type { Cliente } from "@/lib/dados";
+import { NICHOS } from "@/lib/empresa";
 import { Enviar } from "./botoes";
 import { Campo, cls } from "./ui";
 
@@ -62,6 +63,14 @@ export function ClienteForm({
         <legend className="mb-3 text-sm font-semibold">Para pedidos e entregas</legend>
         <Campo rotulo="Nome do cliente *" className="sm:col-span-2" dica="Como vocês chamam o cliente no dia a dia.">
           {campo("nome", { required: true, autoFocus: !inicial.id })}
+        </Campo>
+        <Campo rotulo="Nicho" dica="Escolha da lista ou escreva outro.">
+          {campo("nicho", { list: "nichos", placeholder: "Padaria, cafeteria…" })}
+          <datalist id="nichos">
+            {NICHOS.map((n) => (
+              <option key={n} value={n} />
+            ))}
+          </datalist>
         </Campo>
         <Campo rotulo={buscandoCep ? "CEP (buscando…)" : "CEP"} dica="Digite o CEP para preencher o endereço.">
           {campo("cep", { inputMode: "numeric", onBlur: buscarCep, placeholder: "00000-000" })}
