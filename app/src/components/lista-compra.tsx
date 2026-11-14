@@ -7,21 +7,13 @@ import { Selo, cls } from "./ui";
 
 type Item = { id: number; nome: string; sabor: string; unidade: string; saldo: number; fisico: number; minimo: number; baixo: boolean; sugestao: number };
 
-/** Quantidades a pedir + texto pronto para mandar à fábrica pelo WhatsApp. */
+/** Quantidades a pedir + pedido pronto para o portal da fábrica. */
 export function ListaCompra({ itens }: { itens: Item[] }) {
   const [qtds, setQtds] = useState<Record<number, string>>(() =>
     Object.fromEntries(itens.map((i) => [i.id, i.sugestao ? String(i.sugestao) : ""])),
   );
-  const [copiado, setCopiado] = useState(false);
   const [copiadoPortal, setCopiadoPortal] = useState(false);
   const pedidos = itens.filter((i) => lerValor(qtds[i.id]) > 0);
-  const texto = [
-    "Olá! Segue o pedido da Breakfast:",
-    "",
-    ...pedidos.map((i) => `• ${qtd(lerValor(qtds[i.id]))} ${i.unidade} – ${i.nome}${i.sabor ? ` ${i.sabor}` : ""}`),
-    "",
-    "Obrigado!",
-  ].join("\n");
 
   // Pedido na ordem e com os nomes do portal da fábrica
   const noPortal = ITENS_PORTAL.map((p) => ({
@@ -88,7 +80,7 @@ export function ListaCompra({ itens }: { itens: Item[] }) {
         )}
         {foraDoPortal.length > 0 && (
           <p className="mb-3 text-xs text-warn">
-            Não achei no portal: {foraDoPortal.map((i) => `${i.nome}${i.sabor ? ` ${i.sabor}` : ""}`).join(", ")}. Peça esses pelo WhatsApp.
+            Não achei no portal: {foraDoPortal.map((i) => `${i.nome}${i.sabor ? ` ${i.sabor}` : ""}`).join(", ")}. Esses não entram no pedido do portal.
           </p>
         )}
         {noPortal.length > 0 && (
@@ -129,32 +121,6 @@ export function ListaCompra({ itens }: { itens: Item[] }) {
         <InstalarFavorito />
       </div>
 
-      <div className="rounded-xl border border-line bg-surface p-4">
-        <h2 className="mb-2 font-semibold">Ou mande pelo WhatsApp</h2>
-        {pedidos.length === 0 ? (
-          <p className="text-sm text-muted">Coloque a quantidade de pelo menos um produto.</p>
-        ) : (
-          <>
-            <pre className="whitespace-pre-wrap rounded-lg bg-background p-3 font-sans text-sm">{texto}</pre>
-            <div className="mt-3 flex flex-wrap gap-2">
-              <a href={`https://wa.me/?text=${encodeURIComponent(texto)}`} target="_blank" rel="noreferrer" className={cls.botao}>
-                💬 Enviar no WhatsApp
-              </a>
-              <button
-                type="button"
-                className={cls.botao2}
-                onClick={async () => {
-                  await navigator.clipboard.writeText(texto).catch(() => {});
-                  setCopiado(true);
-                  setTimeout(() => setCopiado(false), 2000);
-                }}
-              >
-                {copiado ? "Copiado ✓" : "Copiar texto"}
-              </button>
-            </div>
-          </>
-        )}
-      </div>
     </div>
   );
 }

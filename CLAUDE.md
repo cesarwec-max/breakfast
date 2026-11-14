@@ -77,7 +77,7 @@ que uso comercial pede o plano Pro.
   os pedidos que seguram a reserva. **As telas mostram só "Na prateleira" e "Reservado"** (o usuário pediu para não
   exibir "livre para vender", que confundia); o livre aparece só como aviso ("tudo reservado", "faltam X p/ pedidos").
 - **Estoque mínimo** (`produtos.estoque_minimo`): no mínimo ou abaixo = "acabando" (`acabando()` em `dados.ts`).
-  `/estoque/compra`: lista de compra com sugestão (dobro do mínimo − saldo) e texto para a fábrica no WhatsApp.
+  `/estoque/compra`: lista de compra com sugestão (dobro do mínimo − saldo); o pedido à fábrica é só pelo portal (sem WhatsApp).
   **Portal da fábrica (JRM Foods, https://jrmfoods.com.br/pedidos):** o pedido à fábrica é feito lá, por uma pessoa.
   A lista de compra mostra o pedido na ordem e com os nomes do portal (`src/lib/portal-fabrica.ts`, `itemDoPortal`
   casa nosso produto pelo nome+sabor) e o botão que abre o portal. O código de acesso **não** fica no app (repo
