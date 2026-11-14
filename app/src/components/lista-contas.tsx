@@ -3,6 +3,7 @@ import { brl, dataBR, diasEntre, hoje, valorCampo } from "@/lib/formato";
 import { atualizarConta, desfazerPago, excluirConta, marcarPago } from "@/app/(app)/contas-actions";
 import { Confirmar, Enviar } from "./botoes";
 import { Anexos, type AnexoTela } from "./anexos";
+import { NovoBoleto } from "./novo-boleto";
 import { Selo, Vazio, cls } from "./ui";
 
 export type LinhaConta = {
@@ -20,6 +21,8 @@ export type LinhaConta = {
   aviso?: string;
   /** Link do WhatsApp com a cobrança pronta (Contas a receber). */
   cobrar?: string;
+  /** Contas a pagar: sugestão para acrescentar mais um boleto à mesma compra. */
+  maisBoleto?: { valor: number; vencimento: string };
 };
 
 export function SeloVencimento({ vencimento, pago_em }: { vencimento: string; pago_em: string | null }) {
@@ -124,6 +127,12 @@ export function ListaContas({
                     tipoInicial={c.aviso || c.anexos?.some((a) => a.tipo === "nf") ? "boleto" : undefined}
                   />
                 </div>
+              </details>
+            )}
+            {c.maisBoleto && (
+              <details className="group order-last open:w-full">
+                <summary className={`${cls.botaoPequeno} cursor-pointer list-none`}>＋ Mais um boleto nesta compra</summary>
+                <NovoBoleto contaId={c.id} valor={c.maisBoleto.valor} vencimento={c.maisBoleto.vencimento} />
               </details>
             )}
             <form action={excluirConta.bind(null, tabela, c.id, voltar)} className="ml-auto">

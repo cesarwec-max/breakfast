@@ -117,3 +117,38 @@ export async function lancarPagar(form: FormData): Promise<{ ids?: number[]; err
   revalidatePath("/", "layout");
   return { ids };
 }
+
+/**
+ * Acrescenta mais um boleto (parcela) a uma compra já lançada, no mesmo lote: a nota da compra passa a valer
+ * para ele também. Renumera "parcela x/n" na descrição de todas as parcelas da compra.
+ * Quem chama (components/novo-boleto.tsx) anexa depois o arquivo do boleto no id devolvido.
+ */
+export async function adicionarParcela(contaId: number, form: FormData): Promise<{ id?: number; erro?: string }> {
+  await exigirLogin();
+  const valor = lerValor(form.get("valor"));
+  const vencimento = String(form.get("vencimento") ?? "");
+  if (!(valor > 0) || !/^\d{4}-\d{2}-\d{2}$/.test(vencimento)) return { erro: "Informe o valor e o vencimento do boleto." };
+  const id = await sql.begin(async (tx) => {
+    const [base] = await tx<{ fornecedor: string; descricao: string; lote: number }[]>`
+      SELECT fornecedor, descricao, COALESCE(lote, id) AS lote FROM contas_pagar WHERE id = ${contaId}`;
+    if (!base) return null;
+    await tx`UPDATE contas_pagar SET lote = ${base.lote} WHERE id = ${base.lote} AND lote IS NULL`;
+    const [r] = await tx<{ id: number }[]>`
+      INSERT INTO contas_pagar (fornecedor, descricao, valor, vencimento, lote)
+      VALUES (${base.fornecedor}, '', ${valor}, ${vencimento}, ${base.lote}) RETURNING id`;
+    // Renumera as parcelas da compra pelo vencimento, mantendo o texto de cada uma
+    const todas = await tx<{ id: number; descricao: string }[]>`
+      SELECT id, descricao FROM contas_pagar WHERE COALESCE(lote, id) = ${base.lote} ORDER BY vencimento, id`;
+    const tirar = (d: string) => d.replace(/\s*·?\s*parcela \d+\/\d+$/i, "").trim();
+    const texto = tirar(base.descricao);
+    for (const [i, p] of todas.entries()) {
+      const propria = p.id === r.id ? texto : tirar(p.descricao);
+      const descricao = [propria, `parcela ${i + 1}/${todas.length}`].filter(Boolean).join(" · ");
+      await tx`UPDATE contas_pagar SET descricao = ${descricao} WHERE id = ${p.id}`;
+    }
+    return r.id;
+  });
+  if (!id) return { erro: "Conta a pagar não encontrada." };
+  revalidatePath("/", "layout");
+  return { id };
+}

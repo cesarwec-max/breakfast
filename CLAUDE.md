@@ -62,6 +62,8 @@ que uso comercial pede o plano Pro.
   cada arquivo por `enviarAnexo` (um por vez, por causa do limite da Vercel). A nota vale para a compra (lote);
   cada boleto fica na sua parcela. Parcela em aberto sem o seu boleto mostra "⚠ Falta anexar o boleto"
   (`pagarSemBoleto()` em `dados.ts` usa a mesma regra no painel).
+  **"＋ Mais um boleto nesta compra"** (`components/novo-boleto.tsx` + `adicionarParcela`): acrescenta uma parcela ao
+  mesmo lote (com o arquivo do boleto) e renumera "parcela x/n"; para quando esqueceram um boleto ao lançar.
 - **Cobrar no WhatsApp** (`src/lib/cobranca.ts`): link `wa.me` com a mensagem pronta (valor, vencimento, PIX copia e
   cola com o valor). Conta que veio de boleto ou pedido "Boleto" não manda PIX ("reenviamos o boleto"). Em Contas a
   receber, no painel e na ficha do cliente (cobra tudo em aberto de uma vez). Sem telefone: abre o WhatsApp para

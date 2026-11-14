@@ -42,7 +42,15 @@ export default async function Pagar({ searchParams }: { searchParams: Promise<{ 
     // em compras antigas, em que todos os boletos foram anexados juntos numa parcela só.
     const juntos = meus.length === 0 && boletosLote >= c.parcelas_lote;
     const ordem = [...meus, ...doLote.filter((x) => x.b.tipo !== "boleto" || (juntos && !meus.includes(x)))].map((x) => x.t);
-    return { ...c, nome: c.fornecedor, anexos: ordem, aviso: faltaBoleto ? "Falta anexar o boleto" : undefined };
+    // Sugestão para "mais um boleto": mesmo valor, 30 dias depois do último vencimento da compra
+    const ultimo = contas.filter((o) => o.lote === c.lote).reduce((m, o) => (o.vencimento > m ? o.vencimento : m), c.vencimento);
+    return {
+      ...c,
+      nome: c.fornecedor,
+      anexos: ordem,
+      aviso: faltaBoleto ? "Falta anexar o boleto" : undefined,
+      maisBoleto: { valor: c.valor, vencimento: somarDias(ultimo, 30) },
+    };
   };
   const faltando = contas.filter((c) => linha(c).aviso).length;
 
