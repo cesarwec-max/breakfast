@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { lerValor, qtd } from "@/lib/formato";
+import { ITENS_PORTAL, PORTAL_FABRICA, itemDoPortal } from "@/lib/portal-fabrica";
 import { Selo, cls } from "./ui";
 
 type Item = { id: number; nome: string; sabor: string; unidade: string; saldo: number; fisico: number; minimo: number; baixo: boolean; sugestao: number };
@@ -12,6 +13,7 @@ export function ListaCompra({ itens }: { itens: Item[] }) {
     Object.fromEntries(itens.map((i) => [i.id, i.sugestao ? String(i.sugestao) : ""])),
   );
   const [copiado, setCopiado] = useState(false);
+  const [copiadoPortal, setCopiadoPortal] = useState(false);
   const pedidos = itens.filter((i) => lerValor(qtds[i.id]) > 0);
   const texto = [
     "Olá! Segue o pedido da Breakfast:",
@@ -20,6 +22,15 @@ export function ListaCompra({ itens }: { itens: Item[] }) {
     "",
     "Obrigado!",
   ].join("\n");
+
+  // Pedido na ordem e com os nomes do portal da fábrica
+  const noPortal = ITENS_PORTAL.map((p) => ({
+    p,
+    quantidade: pedidos.filter((i) => itemDoPortal(i.nome, i.sabor)?.id === p.id).reduce((s, i) => s + lerValor(qtds[i.id]), 0),
+    unidade: pedidos.find((i) => itemDoPortal(i.nome, i.sabor)?.id === p.id)?.unidade ?? "",
+  })).filter((x) => x.quantidade > 0);
+  const foraDoPortal = pedidos.filter((i) => !itemDoPortal(i.nome, i.sabor));
+  const textoPortal = noPortal.map((x) => `${x.p.nome} · ${x.p.variacao}: ${qtd(x.quantidade)} ${x.unidade}`).join("\n");
 
   if (itens.length === 0) return <p className="text-sm text-muted">Cadastre produtos no estoque primeiro.</p>;
 
@@ -53,8 +64,55 @@ export function ListaCompra({ itens }: { itens: Item[] }) {
         ))}
       </ul>
 
+      <div className="rounded-xl border-2 border-accent/30 bg-surface p-4">
+        <h2 className="mb-1 font-semibold">🛒 Pedido no portal da {PORTAL_FABRICA.nome}</h2>
+        <p className="mb-3 text-sm text-muted">
+          Abra o portal, entre com o código de acesso da Breakfast e coloque estas quantidades (mesma ordem e mesmos nomes do portal).
+        </p>
+        {noPortal.length === 0 ? (
+          <p className="text-sm text-muted">Coloque a quantidade de pelo menos um produto da fábrica.</p>
+        ) : (
+          <ol className="mb-3 divide-y divide-line rounded-lg border border-line bg-background">
+            {noPortal.map((x) => (
+              <li key={x.p.id} className="flex items-center gap-3 px-3 py-2 text-sm">
+                <span className="min-w-0 flex-1">
+                  <span className="font-medium">{x.p.nome}</span> · <span className="text-accent">{x.p.variacao}</span>
+                  {x.p.caixa && <span className="block text-xs text-muted">No portal é vendido em caixa fechada (25 pacotes de 400 g).</span>}
+                </span>
+                <span className="tabular shrink-0 text-base font-bold">
+                  {qtd(x.quantidade)} <span className="text-xs font-normal text-muted">{x.unidade}</span>
+                </span>
+              </li>
+            ))}
+          </ol>
+        )}
+        {foraDoPortal.length > 0 && (
+          <p className="mb-3 text-xs text-warn">
+            Não achei no portal: {foraDoPortal.map((i) => `${i.nome}${i.sabor ? ` ${i.sabor}` : ""}`).join(", ")}. Peça esses pelo WhatsApp.
+          </p>
+        )}
+        <div className="flex flex-wrap gap-2">
+          <a href={PORTAL_FABRICA.url} target="_blank" rel="noreferrer" className={cls.botao}>
+            Abrir o portal da {PORTAL_FABRICA.nome} ↗
+          </a>
+          {noPortal.length > 0 && (
+            <button
+              type="button"
+              className={cls.botao2}
+              onClick={async () => {
+                await navigator.clipboard.writeText(textoPortal).catch(() => {});
+                setCopiadoPortal(true);
+                setTimeout(() => setCopiadoPortal(false), 2000);
+              }}
+            >
+              {copiadoPortal ? "Copiado ✓" : "Copiar a lista"}
+            </button>
+          )}
+        </div>
+      </div>
+
       <div className="rounded-xl border border-line bg-surface p-4">
-        <h2 className="mb-2 font-semibold">Mensagem para a fábrica</h2>
+        <h2 className="mb-2 font-semibold">Ou mande pelo WhatsApp</h2>
         {pedidos.length === 0 ? (
           <p className="text-sm text-muted">Coloque a quantidade de pelo menos um produto.</p>
         ) : (

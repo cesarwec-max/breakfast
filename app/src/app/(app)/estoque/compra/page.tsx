@@ -22,7 +22,7 @@ export default async function Compra() {
     <>
       <Titulo
         titulo="Lista de compra"
-        subtitulo="Produtos acabando aparecem primeiro, já com uma quantidade sugerida (o dobro do mínimo, contando o que já está reservado para pedidos). Ajuste e envie para a fábrica."
+        subtitulo="Produtos acabando aparecem primeiro, já com uma quantidade sugerida (o dobro do mínimo, contando o que já está reservado para pedidos). Ajuste as quantidades e faça o pedido no portal da fábrica."
         voltar={{ href: "/estoque", rotulo: "Estoque" }}
       />
       <ListaCompra itens={itens} />

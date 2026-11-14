@@ -78,6 +78,10 @@ que uso comercial pede o plano Pro.
   exibir "livre para vender", que confundia); o livre aparece só como aviso ("tudo reservado", "faltam X p/ pedidos").
 - **Estoque mínimo** (`produtos.estoque_minimo`): no mínimo ou abaixo = "acabando" (`acabando()` em `dados.ts`).
   `/estoque/compra`: lista de compra com sugestão (dobro do mínimo − saldo) e texto para a fábrica no WhatsApp.
+  **Portal da fábrica (JRM Foods, https://jrmfoods.com.br/pedidos):** o pedido à fábrica é feito lá, por uma pessoa.
+  A lista de compra mostra o pedido na ordem e com os nomes do portal (`src/lib/portal-fabrica.ts`, `itemDoPortal`
+  casa nosso produto pelo nome+sabor) e o botão que abre o portal. O código de acesso **não** fica no app (repo
+  público) e o app não envia pedido sozinho ao portal (não é API oficial; só com acordo da JRM).
   **Alerta:** número vermelho na aba Estoque do menu (`Menu alertas`, calculado no `(app)/layout.tsx`) e quadro no
   topo do Estoque com os produtos acabando. O alerta usa o livre (já descontado o reservado). Migração única
   `minimos-folhado-ouro`: Folhado de Ouro LANCHE Requeijão 20, LANCHE Presunto e Queijo 10, MINI Requeijão 40,
