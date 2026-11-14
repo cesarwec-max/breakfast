@@ -1,8 +1,8 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { lerValor, qtd } from "@/lib/formato";
-import { ITENS_PORTAL, PORTAL_FABRICA, itemDoPortal } from "@/lib/portal-fabrica";
+import { ITENS_PORTAL, PORTAL_FABRICA, favoritoPortal, itemDoPortal, textoParaPortal } from "@/lib/portal-fabrica";
 import { Selo, cls } from "./ui";
 
 type Item = { id: number; nome: string; sabor: string; unidade: string; saldo: number; fisico: number; minimo: number; baixo: boolean; sugestao: number };
@@ -30,7 +30,7 @@ export function ListaCompra({ itens }: { itens: Item[] }) {
     unidade: pedidos.find((i) => itemDoPortal(i.nome, i.sabor)?.id === p.id)?.unidade ?? "",
   })).filter((x) => x.quantidade > 0);
   const foraDoPortal = pedidos.filter((i) => !itemDoPortal(i.nome, i.sabor));
-  const textoPortal = noPortal.map((x) => `${x.p.nome} · ${x.p.variacao}: ${qtd(x.quantidade)} ${x.unidade}`).join("\n");
+  const textoPortal = textoParaPortal(noPortal);
 
   if (itens.length === 0) return <p className="text-sm text-muted">Cadastre produtos no estoque primeiro.</p>;
 
@@ -91,24 +91,42 @@ export function ListaCompra({ itens }: { itens: Item[] }) {
             Não achei no portal: {foraDoPortal.map((i) => `${i.nome}${i.sabor ? ` ${i.sabor}` : ""}`).join(", ")}. Peça esses pelo WhatsApp.
           </p>
         )}
+        {noPortal.length > 0 && (
+          <ol className="mb-3 list-decimal space-y-0.5 pl-5 text-sm">
+            <li>
+              Clique em <b>&quot;Copiar para o portal e abrir&quot;</b>.
+            </li>
+            <li>No portal, entre com o código de acesso da Breakfast.</li>
+            <li>
+              Clique no favorito <b>&quot;Preencher pedido Breakfast&quot;</b> (na barra de favoritos): as quantidades entram sozinhas.
+            </li>
+            <li>
+              Confira o resumo do portal com esta lista e clique em <b>&quot;Enviar pedido&quot;</b> lá.
+            </li>
+          </ol>
+        )}
         <div className="flex flex-wrap gap-2">
-          <a href={PORTAL_FABRICA.url} target="_blank" rel="noreferrer" className={cls.botao}>
-            Abrir o portal da {PORTAL_FABRICA.nome} ↗
-          </a>
-          {noPortal.length > 0 && (
-            <button
-              type="button"
-              className={cls.botao2}
-              onClick={async () => {
-                await navigator.clipboard.writeText(textoPortal).catch(() => {});
+          {noPortal.length > 0 ? (
+            <a
+              href={PORTAL_FABRICA.url}
+              target="_blank"
+              rel="noreferrer"
+              className={cls.botao}
+              onClick={() => {
+                navigator.clipboard.writeText(textoPortal).catch(() => {});
                 setCopiadoPortal(true);
-                setTimeout(() => setCopiadoPortal(false), 2000);
+                setTimeout(() => setCopiadoPortal(false), 4000);
               }}
             >
-              {copiadoPortal ? "Copiado ✓" : "Copiar a lista"}
-            </button>
+              {copiadoPortal ? "Copiado ✓ — portal aberto em outra aba" : "📋 Copiar para o portal e abrir ↗"}
+            </a>
+          ) : (
+            <a href={PORTAL_FABRICA.url} target="_blank" rel="noreferrer" className={cls.botao2}>
+              Abrir o portal da {PORTAL_FABRICA.nome} ↗
+            </a>
           )}
         </div>
+        <InstalarFavorito />
       </div>
 
       <div className="rounded-xl border border-line bg-surface p-4">
@@ -138,5 +156,44 @@ export function ListaCompra({ itens }: { itens: Item[] }) {
         )}
       </div>
     </div>
+  );
+}
+
+/** Primeira vez: arrastar o favorito "Preencher pedido Breakfast" para a barra de favoritos do navegador. */
+function InstalarFavorito() {
+  const link = useRef<HTMLAnchorElement>(null);
+  // O React não aceita "javascript:" no href; colocamos direto no elemento.
+  useEffect(() => {
+    link.current?.setAttribute("href", favoritoPortal());
+  }, []);
+  return (
+    <details className="mt-4 rounded-lg border border-line bg-background p-3 text-sm">
+      <summary className="cursor-pointer font-semibold">⚙ Primeira vez neste computador? Instale o botão &quot;Preencher pedido Breakfast&quot;</summary>
+      <ol className="mt-2 list-decimal space-y-2 pl-5">
+        <li>
+          Mostre a barra de favoritos do navegador: aperte <kbd className="rounded border border-line bg-surface px-1">Ctrl</kbd>+
+          <kbd className="rounded border border-line bg-surface px-1">Shift</kbd>+<kbd className="rounded border border-line bg-surface px-1">B</kbd>.
+        </li>
+        <li>
+          <b>Arraste</b> (clique, segure e solte) este botão para a barra de favoritos:{" "}
+          <a
+            ref={link}
+            draggable
+            onClick={(e) => {
+              e.preventDefault();
+              alert("Não é para clicar aqui: arraste este botão para a barra de favoritos. Depois use-o dentro do portal da fábrica.");
+            }}
+            className="ml-1 inline-flex cursor-grab items-center rounded-lg border-2 border-dashed border-accent bg-accent-soft px-3 py-1.5 font-semibold text-accent"
+          >
+            🥐 Preencher pedido Breakfast
+          </a>
+        </li>
+        <li>Pronto! Ele fica na barra. Só funciona dentro do portal, depois de entrar com o código.</li>
+      </ol>
+      <p className="mt-2 text-xs text-muted">
+        O botão só coloca as quantidades nos produtos: não entra com o código, não guarda senha e não envia o pedido. Na primeira vez, o navegador pode
+        perguntar se o portal pode ler o que foi copiado: clique em &quot;Permitir&quot;. Se não permitir, ele abre uma janelinha para colar (Ctrl+V).
+      </p>
+    </details>
   );
 }

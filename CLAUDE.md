@@ -82,6 +82,11 @@ que uso comercial pede o plano Pro.
   A lista de compra mostra o pedido na ordem e com os nomes do portal (`src/lib/portal-fabrica.ts`, `itemDoPortal`
   casa nosso produto pelo nome+sabor) e o botão que abre o portal. O código de acesso **não** fica no app (repo
   público) e o app não envia pedido sozinho ao portal (não é API oficial; só com acordo da JRM).
+  **Favorito "Preencher pedido Breakfast"** (bookmarklet, `favoritoPortal()`; usado no computador): o app copia
+  `PEDIDO-BREAKFAST fl-req=40;fm-req=80` (`textoParaPortal`) e abre o portal; a pessoa entra com o código e clica no
+  favorito, que zera e preenche os campos `#q-<id>` do portal (evento `input`) e avisa o que não achou. Não envia.
+  Se a JRM mudar o portal (ids `q-…` ou a lista de produtos), atualizar `ITENS_PORTAL`. Testar só com portal simulado
+  (Playwright `ctx.route`), nunca no site real.
   **Alerta:** número vermelho na aba Estoque do menu (`Menu alertas`, calculado no `(app)/layout.tsx`) e quadro no
   topo do Estoque com os produtos acabando. O alerta usa o livre (já descontado o reservado). Migração única
   `minimos-folhado-ouro`: Folhado de Ouro LANCHE Requeijão 20, LANCHE Presunto e Queijo 10, MINI Requeijão 40,
