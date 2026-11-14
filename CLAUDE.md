@@ -126,6 +126,8 @@ que uso comercial pede o plano Pro.
   as animações.
 - **Solicitação de boleto:** folha de 1024 px com a arte da marca (`components/documentos.tsx`) que vira JPG com
   `html-to-image`. O usuário aprovou como está.
+- **Datas sempre em DD/MM/AAAA:** use `components/campo-data.tsx` (`CampoData`), nunca `<input type="date">`
+  (o campo nativo segue o idioma do aparelho). Ele envia AAAA-MM-DD no `name` e tem o botão 📅 do calendário.
 - Textos fixos (slogan, e-mail do financeiro breakfastpix@gmail.com) ficam em `src/lib/empresa.ts`.
 
 ## Identidade visual

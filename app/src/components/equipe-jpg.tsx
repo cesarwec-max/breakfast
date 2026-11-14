@@ -1,5 +1,6 @@
 "use client";
 
+import { CampoData } from "@/components/campo-data";
 import { useState } from "react";
 import { FolhaJPG } from "./folha-jpg";
 import { FolhaPedidos, type PedidoFolha } from "./folha-pedidos";
@@ -14,7 +15,7 @@ export function EquipeJPG({ pedidos, hoje }: { pedidos: PedidoFolha[]; hoje: str
     <div className="space-y-4">
       <div className="grid gap-3 sm:grid-cols-[12rem_1fr]">
         <Campo rotulo="Atualizado em" dica="Já vem com a data de hoje.">
-          <input type="date" value={data} onChange={(e) => e.target.value && setData(e.target.value)} className={cls.input} />
+          <CampoData value={data} onChange={(v) => v && setData(v)} />
         </Campo>
         <Campo rotulo="Observações gerais (opcional)">
           <textarea value={obs} onChange={(e) => setObs(e.target.value)} rows={2} className={cls.input} placeholder="Ex.: Quinta não tem entrega na zona sul" />

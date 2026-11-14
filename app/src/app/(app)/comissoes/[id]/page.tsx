@@ -1,3 +1,4 @@
+import { CampoData } from "@/components/campo-data";
 import type { Metadata } from "next";
 import Link from "next/link";
 import { notFound } from "next/navigation";
@@ -160,7 +161,7 @@ export default async function ComissaoRepresentante({
                     Lançar {brl(c.valor)} em Contas a pagar, com vencimento em
                   </label>
                   <div className="w-44">
-                    <input type="date" name="vencimento" defaultValue={vencimentoSugerido} className={cls.input} aria-label="Vencimento" />
+                    <CampoData name="vencimento" defaultValue={vencimentoSugerido} aria-label="Vencimento" />
                   </div>
                 </div>
               )}

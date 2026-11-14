@@ -1,5 +1,6 @@
 "use client";
 
+import { CampoData } from "@/components/campo-data";
 import { useState } from "react";
 import { brl, lerValor, somarDias, valorCampo } from "@/lib/formato";
 import { ACEITA_ARQUIVOS } from "@/lib/anexos";
@@ -63,13 +64,11 @@ export function ParcelasEditor({
               className={cls.input}
               aria-label={`Valor da parcela ${i + 1}`}
             />
-            <input
+            <CampoData
               name="parcela_vencimento"
-              type="date"
               required
               value={l.vencimento}
-              onChange={(e) => muda(l.chave, { vencimento: e.target.value })}
-              className={cls.input}
+              onChange={(v) => muda(l.chave, { vencimento: v })}
               aria-label={`Vencimento da parcela ${i + 1}`}
             />
             <button
@@ -126,7 +125,7 @@ export function ParcelasEditor({
           </label>
           <label className="text-xs text-muted">
             1º vencimento
-            <input type="date" value={dividir.inicio} onChange={(e) => setDividir({ ...dividir, inicio: e.target.value })} className={cls.input} />
+            <CampoData value={dividir.inicio} onChange={(v) => setDividir({ ...dividir, inicio: v })} />
           </label>
           <label className="text-xs text-muted">
             A cada (dias)

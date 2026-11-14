@@ -1,5 +1,6 @@
 "use client";
 
+import { CampoData } from "@/components/campo-data";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
 import { enviarAnexo } from "@/app/(app)/anexos-actions";
@@ -67,7 +68,7 @@ export function NovoBoleto({ contaId, valor, vencimento }: { contaId: number; va
           <input name="valor" inputMode="decimal" required defaultValue={valorCampo(valor)} className={cls.input} />
         </Campo>
         <Campo rotulo="Vencimento">
-          <input name="vencimento" type="date" required defaultValue={vencimento} className={cls.input} />
+          <CampoData name="vencimento" required defaultValue={vencimento} />
         </Campo>
       </div>
       <Campo rotulo="📄 Arquivo do boleto (PDF ou foto)">

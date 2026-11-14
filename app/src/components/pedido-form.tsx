@@ -1,3 +1,4 @@
+import { CampoData } from "@/components/campo-data";
 import Link from "next/link";
 import { ClienteSelect, type OpcaoCliente } from "./cliente-select";
 import { ItensEditor, type OpcaoProduto } from "./itens-editor";
@@ -46,7 +47,7 @@ export function PedidoForm({
     <form action={acao} className="space-y-5">
       <ClienteSelect clientes={clientes} inicial={inicial.cliente_id} voltar={voltar} />
       <Campo rotulo="Data de entrega *" className="max-w-xs">
-        <input type="date" name="data_entrega" required defaultValue={inicial.data_entrega} className={cls.input} />
+        <CampoData name="data_entrega" required defaultValue={inicial.data_entrega} />
       </Campo>
       <ItensEditor produtos={produtos} inicial={inicial.itens} />
       <div className="grid gap-4 sm:grid-cols-2">
@@ -59,7 +60,7 @@ export function PedidoForm({
           </datalist>
         </Campo>
         <Campo rotulo="Pagar até (opcional)">
-          <input type="date" name="vencimento_pagamento" defaultValue={inicial.vencimento_pagamento ?? ""} className={cls.input} />
+          <CampoData name="vencimento_pagamento" defaultValue={inicial.vencimento_pagamento ?? ""} />
         </Campo>
       </div>
       {representantes.length > 0 && (

@@ -1,9 +1,10 @@
 "use client";
 
+import { CampoData } from "@/components/campo-data";
 import { useState } from "react";
 import { FolhaJPG } from "./folha-jpg";
 import { FolhaReceber, type ContaFolha } from "./folha-receber";
-import { Campo, cls } from "./ui";
+import { Campo } from "./ui";
 
 /** Gera o JPG "Pedidos pendentes de pagamento". */
 export function ReceberJPG({ contas, hoje }: { contas: ContaFolha[]; hoje: string }) {
@@ -15,7 +16,7 @@ export function ReceberJPG({ contas, hoje }: { contas: ContaFolha[]; hoje: strin
     <div className="space-y-4">
       <div className="flex flex-wrap items-end gap-4">
         <Campo rotulo="Situação atualizada até" className="w-48">
-          <input type="date" value={ate} onChange={(e) => e.target.value && setAte(e.target.value)} className={cls.input} />
+          <CampoData value={ate} onChange={(v) => v && setAte(v)} />
         </Campo>
         <label className="flex items-center gap-2 pb-3 text-sm">
           <input type="checkbox" checked={soAtrasados} onChange={(e) => setSoAtrasados(e.target.checked)} className="size-4 accent-accent" />

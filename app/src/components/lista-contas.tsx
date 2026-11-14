@@ -1,3 +1,4 @@
+import { CampoData } from "@/components/campo-data";
 import Link from "next/link";
 import { brl, dataBR, diasEntre, hoje, valorCampo } from "@/lib/formato";
 import { atualizarConta, desfazerPago, excluirConta, marcarPago } from "@/app/(app)/contas-actions";
@@ -109,7 +110,7 @@ export function ListaContas({
               <form action={atualizarConta.bind(null, tabela, c.id)} className="mt-2 grid gap-2 rounded-lg border border-line bg-background p-3 sm:grid-cols-3">
                 <input type="hidden" name="voltar" value={voltar} />
                 <input name="valor" inputMode="decimal" defaultValue={valorCampo(c.valor)} className={cls.input} aria-label="Valor" />
-                <input name="vencimento" type="date" defaultValue={c.vencimento} className={cls.input} aria-label="Vencimento" />
+                <CampoData name="vencimento" defaultValue={c.vencimento} aria-label="Vencimento" />
                 <input name="descricao" defaultValue={c.descricao} placeholder="Descrição" className={cls.input} aria-label="Descrição" />
                 <div className="flex gap-2 sm:col-span-3">
                   <Enviar className={cls.botaoPequeno}>Salvar</Enviar>
