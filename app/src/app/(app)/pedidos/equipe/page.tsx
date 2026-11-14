@@ -1,18 +1,15 @@
 import type { Metadata } from "next";
 import { exigirLogin } from "@/lib/auth";
 import { listarPedidos } from "@/lib/dados";
-import { hoje, somarDias } from "@/lib/formato";
+import { hoje } from "@/lib/formato";
+
+// Sempre feita na hora (data de hoje e pedidos atuais), nunca guardada em cache.
+export const dynamic = "force-dynamic";
 import { EquipeJPG } from "@/components/equipe-jpg";
 import type { PedidoFolha } from "@/components/folha-pedidos";
 import { Titulo, Vazio } from "@/components/ui";
 
 export const metadata: Metadata = { title: "JPG para a equipe" };
-
-/** Segunda-feira da semana de `dia`. */
-function segunda(dia: string) {
-  const d = new Date(dia + "T12:00:00Z").getUTCDay(); // 0 = domingo
-  return somarDias(dia, d === 0 ? -6 : 1 - d);
-}
 
 export default async function EquipePagina() {
   await exigirLogin();
@@ -41,7 +38,7 @@ export default async function EquipePagina() {
         subtitulo={`${folha.length} pedido(s) a entregar. A imagem é feita com os pedidos pendentes e em rota.`}
         voltar={{ href: "/pedidos", rotulo: "Pedidos" }}
       />
-      {folha.length === 0 ? <Vazio>Nenhum pedido a entregar no momento.</Vazio> : <EquipeJPG pedidos={folha} semanaInicial={segunda(hoje())} />}
+      {folha.length === 0 ? <Vazio>Nenhum pedido a entregar no momento.</Vazio> : <EquipeJPG pedidos={folha} hoje={hoje()} />}
     </>
   );
 }

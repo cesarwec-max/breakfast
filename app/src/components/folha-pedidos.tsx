@@ -51,11 +51,12 @@ function Status({ status }: { status: PedidoFolha["status"] }) {
 
 export function FolhaPedidos({
   pedidos,
-  semana,
+  data,
   observacoesGerais,
 }: {
   pedidos: PedidoFolha[];
-  semana: string; // AAAA-MM-DD
+  /** Dia em que a lista foi atualizada (AAAA-MM-DD) */
+  data: string;
   observacoesGerais: string;
 }) {
   const fotoDestaque = pedidos.flatMap((p) => p.itens).find((i) => i.tem_foto)?.produto_id;
@@ -102,12 +103,12 @@ export function FolhaPedidos({
           </span>
         </div>
 
-        {/* Semana */}
+        {/* Data da atualização */}
         <div className="absolute left-[504px] top-[70px] flex w-[132px] flex-col items-center rounded-[18px] px-3 pb-5 pt-4 font-condensada" style={{ background: PRETO }}>
           <CalendarDays size={58} strokeWidth={1.8} style={{ color: VERMELHO }} />
-          <span className="mt-2 text-[25px] uppercase leading-none text-white">Semana de</span>
+          <span className="mt-2 text-center text-[22px] uppercase leading-[1.05] text-white">Atualizado em</span>
           <span className="mt-1 text-[50px] font-semibold leading-none" style={{ color: VERMELHO }}>
-            {dataBR(semana).slice(0, 5)}
+            {dataBR(data).slice(0, 5)}
           </span>
           <span className="mt-3 h-[14px] w-[64px] rounded-full" style={{ background: VERMELHO }} />
         </div>

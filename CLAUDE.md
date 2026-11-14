@@ -97,7 +97,7 @@ que uso comercial pede o plano Pro.
   mesmas medidas em `components/folha-nf-contador.tsx`. Nome do arquivo: `Solicitacao_NF_<RAZAO>_R<centavos>.pdf`.
   **Não mude o layout sem o usuário pedir: o contador está acostumado com ele.**
 - **JPG para a equipe** (`/pedidos/equipe`): folha "Solicitações de pedidos" no visual do modelo do usuário
-  (vermelho/preto), com os pedidos a entregar (pendentes e em rota), semana e observações gerais editáveis
+  (vermelho/preto), com os pedidos a entregar (pendentes e em rota), "Atualizado em" (data de hoje, editável) e observações gerais
   (`components/folha-pedidos.tsx` + `components/equipe-jpg.tsx`). Usa a foto do produto, se houver.
 - **JPG de pendentes de pagamento** (`/receber/jpg`): boletos em aberto com selo Atrasado/Pendente e total geral,
   no visual do modelo do usuário (laranja/grafite) — `components/folha-receber.tsx` + `receber-jpg.tsx`.
