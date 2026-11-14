@@ -16,7 +16,8 @@ export default async function Estoque({ searchParams }: { searchParams: Promise<
   const { salvo } = await searchParams;
   const [produtos, movimentos] = await Promise.all([listarProdutos(), listarMovimentos({ limite: 30 })]);
 
-  const baixos = produtos.filter(acabando).length;
+  const alertas = produtos.filter(acabando);
+  const baixos = alertas.length;
 
   return (
     <>
@@ -26,6 +27,32 @@ export default async function Estoque({ searchParams }: { searchParams: Promise<
         </Link>
       </Titulo>
       {salvo && <Aviso tom="ok">Produto cadastrado.</Aviso>}
+      {alertas.length > 0 && (
+        <div className="mb-4 rounded-xl border border-danger/30 bg-danger-soft p-4">
+          <div className="font-semibold text-danger">
+            ⚠ {alertas.length === 1 ? "1 produto está" : `${alertas.length} produtos estão`} no estoque mínimo ou abaixo
+          </div>
+          <ul className="mt-2 space-y-1 text-sm">
+            {alertas.map((p) => (
+              <li key={p.id} className="flex flex-wrap justify-between gap-x-3">
+                <Link href={`/estoque/${p.id}`} className="font-medium hover:text-accent">
+                  {p.nome}
+                  {p.sabor && <span className="text-accent"> · {p.sabor}</span>}
+                </Link>
+                <span className="tabular text-muted">
+                  {p.reservado > 0
+                    ? `${qtd(p.saldo)} ${p.unidade} sem reserva (${qtd(p.fisico)} na prateleira)`
+                    : `${qtd(p.fisico)} ${p.unidade} na prateleira`}
+                  {p.estoque_minimo > 0 && ` · mínimo ${qtd(p.estoque_minimo)}`}
+                </span>
+              </li>
+            ))}
+          </ul>
+          <Link href="/estoque/compra" className={`${cls.botao} mt-3`}>
+            🛒 Montar pedido para a fábrica
+          </Link>
+        </div>
+      )}
 
       {produtos.length === 0 ? (
         <Vazio>Cadastre seus produtos abaixo para começar a controlar o estoque.</Vazio>

@@ -3,9 +3,12 @@ import { redirect } from "next/navigation";
 import { exigirLogin, sair } from "@/lib/auth";
 import { Logo } from "@/components/logo";
 import { Menu } from "@/components/menu";
+import { acabando, listarProdutos } from "@/lib/dados";
 
 export default async function LayoutApp({ children }: { children: React.ReactNode }) {
   await exigirLogin();
+  // Alerta no menu: produtos no estoque mínimo ou abaixo dele
+  const acabandoQtd = (await listarProdutos()).filter(acabando).length;
 
   async function acaoSair() {
     "use server";
@@ -25,7 +28,7 @@ export default async function LayoutApp({ children }: { children: React.ReactNod
               <button className="text-sm text-white/60 hover:text-white">Sair</button>
             </form>
           </div>
-          <Menu />
+          <Menu alertas={{ "/estoque": acabandoQtd }} />
         </div>
         <div className="bg-marca h-1" />
       </header>

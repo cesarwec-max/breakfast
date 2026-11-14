@@ -220,4 +220,23 @@ export async function migrar() {
       ])}),
       ('Tae', ${tx.json([{ a_partir_de: 0, percentual: 8 }])})`;
   });
+
+  // Uma vez só: estoque mínimo dos Folhados de Ouro pedido pelo usuário (14/11/2026).
+  // Só grava quando o nome casa com exatamente um produto ativo, para não mexer no produto errado.
+  await sql.begin(async (tx) => {
+    const [nova] = await tx`INSERT INTO migracoes (nome) VALUES ('minimos-folhado-ouro') ON CONFLICT DO NOTHING RETURNING nome`;
+    if (!nova) return;
+    const regras = [
+      { linha: "%lanche%", sabor: "%requeij%", minimo: 20 },
+      { linha: "%lanche%", sabor: "%presunto%", minimo: 10 },
+      { linha: "%mini%", sabor: "%requeij%", minimo: 40 },
+      { linha: "%mini%", sabor: "%presunto%", minimo: 15 },
+    ];
+    for (const r of regras) {
+      const achados = await tx<{ id: number }[]>`
+        SELECT id FROM produtos
+        WHERE ativo AND nome ILIKE '%folhado%' AND nome ILIKE ${r.linha} AND (nome || ' ' || sabor) ILIKE ${r.sabor}`;
+      if (achados.length === 1) await tx`UPDATE produtos SET estoque_minimo = ${r.minimo} WHERE id = ${achados[0].id}`;
+    }
+  });
 }

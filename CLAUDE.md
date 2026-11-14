@@ -76,6 +76,10 @@ que uso comercial pede o plano Pro.
   exibir "livre para vender", que confundia); o livre aparece só como aviso ("tudo reservado", "faltam X p/ pedidos").
 - **Estoque mínimo** (`produtos.estoque_minimo`): no mínimo ou abaixo = "acabando" (`acabando()` em `dados.ts`).
   `/estoque/compra`: lista de compra com sugestão (dobro do mínimo − saldo) e texto para a fábrica no WhatsApp.
+  **Alerta:** número vermelho na aba Estoque do menu (`Menu alertas`, calculado no `(app)/layout.tsx`) e quadro no
+  topo do Estoque com os produtos acabando. O alerta usa o livre (já descontado o reservado). Migração única
+  `minimos-folhado-ouro`: Folhado de Ouro LANCHE Requeijão 20, LANCHE Presunto e Queijo 10, MINI Requeijão 40,
+  MINI Presunto e Queijo 15 (só grava se o nome casa com exatamente um produto ativo).
 - **Canhoto assinado** (`components/canhoto.tsx`, na página do pedido): foto do canhoto que o cliente assina na
   entrega, anexo `tipo = 'canhoto'` ligado ao pedido (aparece também em Contas a receber e na ficha do cliente).
   Não bloqueia o "entregue"; a lista de pedidos mostra "sem canhoto"/"✓ canhoto" (`pedidos.tem_canhoto` no select).

@@ -15,7 +15,8 @@ const ITENS = [
   { href: "/comissoes", rotulo: "Comissões" },
 ];
 
-export function Menu() {
+/** `alertas`: número em vermelho ao lado da aba (ex.: produtos acabando no Estoque). */
+export function Menu({ alertas = {} }: { alertas?: Record<string, number> }) {
   const caminho = usePathname();
   const nav = useRef<HTMLElement>(null);
   // No celular o menu rola de lado: mantém a aba aberta visível.
@@ -36,6 +37,14 @@ export function Menu() {
             }`}
           >
             {i.rotulo}
+            {alertas[i.href] > 0 && (
+              <span
+                className="ml-1.5 inline-flex min-w-5 items-center justify-center rounded-full bg-danger px-1.5 text-[11px] font-bold leading-5 text-white"
+                title={`${alertas[i.href]} alerta(s)`}
+              >
+                {alertas[i.href]}
+              </span>
+            )}
           </Link>
         );
       })}
